@@ -1,5 +1,5 @@
 <p align="center">
-   <img src="https://raw.githubusercontent.com/vinni-bio/EXONtools/master/img/EXONtools_small.png" alt="EXONtoools logo" width="600" height="115">
+   <img src="https://github.com/vinni-bio/EXONtools/blob/master/img/EXONtools_small.png" alt="EXONtoools logo" width="600" height="115">
 </p>
 
 <h2 align="center">version 0.3b</h2>
@@ -53,7 +53,7 @@ The main goal of the EXONtools pipeline is to help researchers who are working o
 - produce the final dataset of SNPs based on a comprehensive analysis of ECS data collected from thousands of genes and hundreds of individuals 
 
 <p align="center">
-   <img src="https://raw.githubusercontent.com/vinni-bio/EXONtools/master/img/ECS_small.png" alt="Exon Capture Sequencing" width="800" height="224">
+   <img src="https://github.com/vinni-bio/EXONtools/blob/master/img/ECS_small.png" alt="Exon Capture Sequencing" width="800" height="224">
 </p>
 
 Written in Python, the EXONtools pipeline combines many well-known bioinformatics programs (dependencies) that are commonly used in standard NGS analyses and also implements many new algorithms within a single analytical framework. 
@@ -61,8 +61,10 @@ Written in Python, the EXONtools pipeline combines many well-known bioinformatic
 ## Quick start
 
 Please check that the names of your sequence files follow the EXONtools rules of library name format:
+
 **unpaired files:** LIBNAME_anyletters.fq or LIBNAME.fasta (e.g., `ST-1_unpaired.fq`)
 **paired files:** LIBNAME_R1.fq or LIBNAME_R2.fq (e.g., `ST-1_R1_paired.fq`, `ST-1_R2_paired.fq`)
+
 `R1` and `R2` annotations are mandatory requirements for file names with paired reads. Otherwise these files be considered as unpaired. A single library can only have one file
 with unpaired reads and two files with paired reads (`R1` & `R2`).
 
@@ -70,9 +72,9 @@ Every computational task performed in the EXONtools pipeline is considered as an
 
 Each EXONtools command is executed using the following syntax:
 
-'''
+```
 EXONtools.py [general options] COMMAND [command options]
-'''
+```
 
 The [general program]() options regulate system memory usage, multithreading, debugging modes and the output verbosity, including summary reports with comprehensive statistical information about each procedure. Additionally, the user can adjust some dependency program specific parameters by appending its command line arguments in the EXONtools general options (--extra). 
 
@@ -82,9 +84,9 @@ Each EXONtools command has a unique set of its own arguments ([command options](
 
 The EXONtools pipeline does not require any special compilation in your system environment and can be directly cloned from the EXONtools repository:
 
-'''
+```
 git clone https://github.com/vinni-bio/EXONtools.git
-'''
+```
 
 or [download the latest release](https://github.com/vinni-bio/EXONtools/archive/v0.2b.zip)
 
@@ -96,17 +98,13 @@ Please install the following Python packages with PIP:
 
 **IMPORTANT!!!** Installation of all dependencies is not required. Some dependencies can be omitted if the corresponding pipeline step is not going to be used in the analysis of ECS data. To skip dependency installation just leave a blank line in the \[PATHS\] option of the `dependencies.ini` file like that:
 
-```
-fastqc =
-```
+```fastqc =```
 
 **IMPORTANT!!!** If dependency is installed using the environment PATH, just type the 'default' value in the \[PATHS\] option of the *dependencies.ini* file like that:
 
-```
-fastqc = default
-```
+```fastqc = default```
 
-IMPORTANT!!! The EXONtools pipeline is currently designed to work only on Linux and Unix based operating systems with the command line interface. Supported Python language versions are 2.7.>10 or 3.5.>5. 
+**IMPORTANT!!!** The EXONtools pipeline is currently designed to work only on Linux and Unix based operating systems with the command line interface. Supported Python language versions are 2.7.>10 or 3.5.>5. 
 
 ## Pipeline scheme
 
@@ -237,7 +235,7 @@ EXONtools.py
 - [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic)
 - [Trinity](http://trinityrnaseq.github.io/)
 
-* rename `pblat` file to `blat` file to keep using the parallel BLAT
+\* rename `pblat` file to `blat` file to keep using the parallel BLAT
 
 
 ## Step-by-step example
