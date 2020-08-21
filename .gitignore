@@ -1,0 +1,20 @@
+#### THESE FILES AND FOLDERS WILL BE IGNORED BY GIT
+
+#Log files
+*.log
+
+#COMP/CACHE files
+.DS_Store
+*.pyc
+__pycache__/
+
+#JSON files
+*.json
+
+#Testing folders
+testrun/
+testlocal/
+
+#Dependencies
+deps/*
+

@@ -1,0 +1,95 @@
+This folder is provided for optional storage of the EXONtools dependency programs.
+
+You can install them manually and provide their paths in 'EXONtools.ini' file.
+
+------------------------------------------------------------------------------------------
+A. INSTALLATION LINKS TO ALL EXONTOOLS DEPENDENCY PROGRAMS AND TO THEIR OWN DEPENDENCIES
+
+1) ABySS v2.1.0:
+        git clone https://github.com/bcgsc/abyss.git --branch 2.1.0
+
+    Also install these ABySS dependencies:
+        a) Boost: http://www.boost.org/
+        b) Open MPI: http://www.open-mpi.org/
+        c) sparsehash: https://code.google.com/p/sparsehash/
+
+        MAC with HomeBrew:
+            ALL         $ brew install boost open-mpi google-sparsehash
+        Linux:
+            OpenMPI     $ sudo apt-get install openmpi-bin openssh-client openssh-server libopenmpi-dbg libopenmpi-dev
+            BOOST       $ sudo apt-get install libboost-all-dev
+            sparsehash: $ sudo apt-get install sparsehash
+        Or follow the installation instructions provided in the program manuals and webpages (see above)
+
+2) Trans-ABySS v2.0.1:
+        $ git clone https://github.com/bcgsc/transabyss.git --branch 2.0.1
+
+3) BLAT v2.0:
+        $ git clone https://github.com/icebert/pblat.git --branch 2.0
+        Please rename pblat to blat: $ mv pblat blat
+
+4) Trinity v2.8.3:
+        		$ git clone https://github.com/trinityrnaseq/trinityrnaseq.git --branch Trinity-v2.8.3
+
+        Also install these Trinity dependencies:
+            a) Jellyfish v2.2.10    $ wget https://github.com/gmarcais/Jellyfish/releases/download/v2.2.10/jellyfish-2.2.10.tar.gz
+            b) Salmon v0.11.3   salmon.readthedocs.io
+                $ wget https://github.com/COMBINE-lab/salmon/releases/download/v0.11.3/salmon-0.11.3-linux_x86_64.tar.gz
+
+5) Bowtie2 v2.3.4.2:
+    MAC     	$ wget https://sourceforge.net/projects/bowtie-bio/files/bowtie2/2.3.4.2/bowtie2-2.3.4.2-macos-x86_64.zip
+    LINUX   	$ wget https://sourceforge.net/projects/bowtie-bio/files/bowtie2/2.3.4.2/bowtie2-2.3.4.2-linux-x86_64.zip
+
+6) Samtools v1.9:
+    ALL			$ wget https://github.com/samtools/samtools/releases/download/1.9/samtools-1.9.tar.bz2
+
+7) SPAdes v3.12.0:
+    MAC         $ wget http://cab.spbu.ru/files/release3.12.0/SPAdes-3.12.0-Darwin.tar.gz
+    Linux       $ wget http://cab.spbu.ru/files/release3.12.0/SPAdes-3.12.0-Linux.tar.gz
+
+8) CD-HIT v4.7:
+    ALL    		$ git clone https://github.com/weizhongli/cdhit.git
+
+9) CAP3:
+    MAC         $ wget http://seq.cs.iastate.edu/CAP3/cap3.macosx.intel64.tar
+    LINUX       $ wget http://seq.cs.iastate.edu/CAP3/cap3.linux.x86_64.tar
+
+10) BWA v0.7.17
+    ALL         $ git clone https://github.com/lh3/bwa.git --branch v0.7.17
+
+11) BLAST v2.7.1+
+    MAC         $ wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.7.1+-x64-macosx.tar.gz
+    Linux       $ wget ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.7.1+-x64-linux.tar.gz
+
+12) fastqc v0.11.8
+	ALL			$ wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.8.zip
+
+13)	multiqc v1.8
+	ALL			$ pip install --user multiqc
+
+------------------------------------------------------------------------------------------------------------------------
+B. MOST DEPENDENCIES (BUT NOT ALL) CAN BE EASILY INSTALLED WITH BIOCONDA
+
+1) Install Anaconda from here: https://conda.io/docs/user-guide/install/index.html
+You can use Python 2.7.* or Python >=3.5 versions
+
+2) Add bioconda channel:
+    $ conda config --add channels defaults
+    $ conda config --add channels conda-forge
+    $ conda config --add channels bioconda
+
+3) Create the EXONtools conda environment:
+    $ conda create --name exontools python=3.5.6 python-igraph numpy pandas psutil bowtie2=2.3.4.2 bbmap=38.22 trimmomatic=0.38 pear=0.9.6 cd-hit=4.6.8 spades=3.12.0 bwa=0.7.17 blast=2.7.1 mafft=7.407 cutadapt=1.17 abyss=2.1.0 cap3
+
+4) Run the 'exontools' environment:
+    $ source activate exontools
+
+5) To deactivate the 'exontools' environment:
+    $ source deactivate
+
+Packages that should not be installed with bioconda. Please install them manually:
+    - trinity v2.8.2
+    - transabyss v2.0.1
+    - blat (replaced with pblat)
+    - samtools v1.9
+
