@@ -20,9 +20,9 @@
 ## Table of contents
 
 - [Exon capture sequencing](https://github.com/vinni-bio/EXONtools#exon-capture-sequencing)
-- [EXONtools](https://github.com/vinni-bio/EXONtools#exontools)
+- [EXONtools project](https://github.com/vinni-bio/EXONtools#exontools-project)
 - [Quick start](https://github.com/vinni-bio/EXONtools#quick-start)
-- [Installation](https://github.com/vinni-bio/EXONtools#installation)
+- [INSTALLATION](https://github.com/vinni-bio/EXONtools#installation)
 - [Pipeline scheme](https://github.com/vinni-bio/EXONtools#pipeline-scheme)
 - [EXONtools commands](https://github.com/vinni-bio/EXONtools#exontools-commands-dependencies)
 - [EXONtools general options](https://github.com/vinni-bio/EXONtools#exontools-general-options)
@@ -71,8 +71,7 @@ with unpaired reads OR two files with paired reads (`R1` & `R2`).
 
 Every computational task performed in the EXONtools pipeline is considered as an isolated step and therefore must be started with a separate command. Such an approach provides the end user with a flexibility in the adjustment of different pipeline parameters for each ECS data analysis, including changes in task order or omitting any unnecessary tasks. The EXONtools program is also designed to achieve the most efficient use of all available hardware resources. Each step of the EXONtools pipeline is supplemented by a comprehensive summary report that allows the user to compare and to optimize produced results.
 
-Each EXONtools command is executed using the following syntax:
-
+**Each EXONtools command is executed using the following syntax:**
 ```
 EXONtools.py [general options] COMMAND [command options]
 ```
@@ -171,29 +170,29 @@ EXONtools.py
 ## [EXONtools commands](https://github.com/vinni-bio/EXONtools/blob/master/readme/list-of-commands.md): [dependencies](https://github.com/vinni-bio/EXONtools#links-to-exontools-dependencies)
 
 1. [align_stacks](https://github.com/vinni-bio/EXONtools/blob/master/readme/align_stacks.md):
-- MAFFT ([Katoh and Standley, 2013](https://doi.org/10.1093/molbev/mst010))
+   - MAFFT ([Katoh and Standley, 2013](https://doi.org/10.1093/molbev/mst010))
 2. [annotate_contigs](https://github.com/vinni-bio/EXONtools/blob/master/readme/annotate_contigs.md):
-- BLAST ([Altschul et al., 1990](https://doi.org/10.1016/S0022-2836(05)80360-2))
+   - BLAST ([Altschul et al., 1990](https://doi.org/10.1016/S0022-2836(05)80360-2))
 3. [assemble_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/assemble_reads.md): *choose one*
-- ABySS ([Simpson et al., 2009](https://doi.org/110.1101/gr.089532.108))
-- SPAdes ([Bankevich et al., 2012](https://doi.org/10.1089/cmb.2012.0021))
-- TransABySS ([Robertson et al., 2010](https://doi.org/10.1038/nmeth.1517))
-- Trinity ([Grabherr et al., 2011](https://doi.org/10.1038/nbt.1883))
+   - ABySS ([Simpson et al., 2009](https://doi.org/110.1101/gr.089532.108))
+   - SPAdes ([Bankevich et al., 2012](https://doi.org/10.1089/cmb.2012.0021))
+   - TransABySS ([Robertson et al., 2010](https://doi.org/10.1038/nmeth.1517))
+   - Trinity ([Grabherr et al., 2011](https://doi.org/10.1038/nbt.1883))
 4. [call_bases](https://github.com/vinni-bio/EXONtools/blob/master/readme/call_bases.md)
 5. [call_snps](https://github.com/vinni-bio/EXONtools/blob/master/readme/call_snps.md)
 6. [clean_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/clean_reads.md): *choose one*
-- BBduk (Bushnell, 2018)
-- Cutadapt ([Martin, 2011](https://doi.org/10.14806/ej.17.1.200))
-- Trimmomatic ([Bolger et al., 2014](https://doi.org/10.1093/bioinformatics/btu170))
+   - BBduk (Bushnell, 2018)
+   - Cutadapt ([Martin, 2011](https://doi.org/10.14806/ej.17.1.200))
+   - Trimmomatic ([Bolger et al., 2014](https://doi.org/10.1093/bioinformatics/btu170))
 7. [clean_stacks](https://github.com/vinni-bio/EXONtools/blob/master/readme/clean_stacks.md)
 8. [consensus_assembly](https://github.com/vinni-bio/EXONtools/blob/master/readme/consensus_assembly.md):
-- BLAT ([Kent, 2002](https://doi.org/10.1101/gr.229202))
-- CAP3 ([Huang & Madan, 1999](https://doi.org/10.1101/gr.9.9.868))
-- CD-HIT ([Li & Godzik, 2006](https://doi.org/10.1093/bioinformatics/btl158))
+   - BLAT ([Kent, 2002](https://doi.org/10.1101/gr.229202))
+   - CAP3 ([Huang & Madan, 1999](https://doi.org/10.1101/gr.9.9.868))
+   - CD-HIT ([Li & Godzik, 2006](https://doi.org/10.1093/bioinformatics/btl158))
 9. [correct_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/correct_reads.md):
-- BayesHammer ([Nikolenko et al., 2013](https://doi.org/10.1186/1471-2164-14-S1-S7))
+   - BayesHammer ([Nikolenko et al., 2013](https://doi.org/10.1186/1471-2164-14-S1-S7))
 10. [decontaminate_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/decontaminate_reads.md):
-- Bowtie2 ([Langmead & Salzberg, 2012](https://doi.org/10.1038/nmeth.1923))
+   - Bowtie2 ([Langmead & Salzberg, 2012](https://doi.org/10.1038/nmeth.1923))
 11. [deduplicate_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/deduplicate_reads.md)
 12. [demultiplex_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/demultiplex_reads.md)
 13. [design_baits](https://github.com/vinni-bio/EXONtools/blob/master/readme/design_baits.md)
@@ -203,17 +202,17 @@ EXONtools.py
 17. [filter_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/filter_reads.md)
 18. [format_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/format_reads.md)
 19. [map_exons](https://github.com/vinni-bio/EXONtools/blob/master/readme/map_exons.md):
-- BLAST ([Altschul et al., 1990](https://doi.org/10.1016/S0022-2836(05)80360-2))
-- CD-HIT ([Li & Godzik, 2006](https://doi.org/10.1093/bioinformatics/btl158))
+   - BLAST ([Altschul et al., 1990](https://doi.org/10.1016/S0022-2836(05)80360-2))
+   - CD-HIT ([Li & Godzik, 2006](https://doi.org/10.1093/bioinformatics/btl158))
 20. [map_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/map_reads.md):
-- Bowtie2 ([Langmead & Salzberg, 2012](https://doi.org/10.1038/nmeth.1923))
-- bwa ([Li & Durbin, 2009](https://doi.org/10.1093/bioinformatics/btp324))
-- SAMtools ([Li et al., 2009](https://doi.org/10.1093/bioinformatics/btp352))
+   - Bowtie2 ([Langmead & Salzberg, 2012](https://doi.org/10.1038/nmeth.1923))
+   - bwa ([Li & Durbin, 2009](https://doi.org/10.1093/bioinformatics/btp324))
+   - SAMtools ([Li et al., 2009](https://doi.org/10.1093/bioinformatics/btp352))
 21. [merge_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/merge_reads.md): *choose one*
-- BBmerge ([Bushnell et al., 2017](https://doi.org/10.1371/journal.pone.0185056))
-- FLASH ([Magoč & Salzberg, 2011](https://doi.org/10.1093/bioinformatics/btr507))
+   - BBmerge ([Bushnell et al., 2017](https://doi.org/10.1371/journal.pone.0185056))
+   - FLASH ([Magoč & Salzberg, 2011](https://doi.org/10.1093/bioinformatics/btr507))
 22. [search_exons](https://github.com/vinni-bio/EXONtools/blob/master/readme/search_exons.md):
-- BLAST ([Altschul et al., 1990](https://doi.org/10.1016/S0022-2836(05)80360-2))
+   - BLAST ([Altschul et al., 1990](https://doi.org/10.1016/S0022-2836(05)80360-2))
 23. [split_stacks](https://github.com/vinni-bio/EXONtools/blob/master/readme/split_stacks.md)
 24. [stack_exons](https://github.com/vinni-bio/EXONtools/blob/master/readme/stack_exons.md)
 
