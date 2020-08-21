@@ -192,7 +192,7 @@ EXONtools.py
 9. [correct_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/correct_reads.md):
    - BayesHammer ([Nikolenko et al., 2013](https://doi.org/10.1186/1471-2164-14-S1-S7))
 10. [decontaminate_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/decontaminate_reads.md):
-   - Bowtie2 ([Langmead & Salzberg, 2012](https://doi.org/10.1038/nmeth.1923))
+    - Bowtie2 ([Langmead & Salzberg, 2012](https://doi.org/10.1038/nmeth.1923))
 11. [deduplicate_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/deduplicate_reads.md)
 12. [demultiplex_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/demultiplex_reads.md)
 13. [design_baits](https://github.com/vinni-bio/EXONtools/blob/master/readme/design_baits.md)
@@ -202,17 +202,17 @@ EXONtools.py
 17. [filter_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/filter_reads.md)
 18. [format_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/format_reads.md)
 19. [map_exons](https://github.com/vinni-bio/EXONtools/blob/master/readme/map_exons.md):
-   - BLAST ([Altschul et al., 1990](https://doi.org/10.1016/S0022-2836(05)80360-2))
-   - CD-HIT ([Li & Godzik, 2006](https://doi.org/10.1093/bioinformatics/btl158))
+    - BLAST ([Altschul et al., 1990](https://doi.org/10.1016/S0022-2836(05)80360-2))
+    - CD-HIT ([Li & Godzik, 2006](https://doi.org/10.1093/bioinformatics/btl158))
 20. [map_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/map_reads.md):
-   - Bowtie2 ([Langmead & Salzberg, 2012](https://doi.org/10.1038/nmeth.1923))
-   - bwa ([Li & Durbin, 2009](https://doi.org/10.1093/bioinformatics/btp324))
-   - SAMtools ([Li et al., 2009](https://doi.org/10.1093/bioinformatics/btp352))
+    - Bowtie2 ([Langmead & Salzberg, 2012](https://doi.org/10.1038/nmeth.1923))
+    - bwa ([Li & Durbin, 2009](https://doi.org/10.1093/bioinformatics/btp324))
+    - SAMtools ([Li et al., 2009](https://doi.org/10.1093/bioinformatics/btp352))
 21. [merge_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/merge_reads.md): *choose one*
-   - BBmerge ([Bushnell et al., 2017](https://doi.org/10.1371/journal.pone.0185056))
-   - FLASH ([Magoč & Salzberg, 2011](https://doi.org/10.1093/bioinformatics/btr507))
+    - BBmerge ([Bushnell et al., 2017](https://doi.org/10.1371/journal.pone.0185056))
+    - FLASH ([Magoč & Salzberg, 2011](https://doi.org/10.1093/bioinformatics/btr507))
 22. [search_exons](https://github.com/vinni-bio/EXONtools/blob/master/readme/search_exons.md):
-   - BLAST ([Altschul et al., 1990](https://doi.org/10.1016/S0022-2836(05)80360-2))
+    - BLAST ([Altschul et al., 1990](https://doi.org/10.1016/S0022-2836(05)80360-2))
 23. [split_stacks](https://github.com/vinni-bio/EXONtools/blob/master/readme/split_stacks.md)
 24. [stack_exons](https://github.com/vinni-bio/EXONtools/blob/master/readme/stack_exons.md)
 
