@@ -38,7 +38,7 @@
 
 ## Exon capture sequencing
 
-Exon capture is one of the most promising approaches in next generation sequencing. By targeting only protein coding regions it saves a lot of sequencing effort and allows researchers to obtain SNP data for thousands of genes in hundreds of individuals during one high-throughput sequencing run. Exon capture sequencing is especially important for evolutionary and population genomic studies of non-model organisms because:
+Exon capture is one of the most promising approaches in next generation sequencing. By targeting only protein coding regions it saves a lot of sequencing effort and allows researchers to obtain SNP data for thousands of genes in hundreds of individuals during one high-throughput sequencing run. Exon capture sequencing is especially important for evolutionary and population genomic studies of non-model organisms (Genotyping by Sequencing) because:
 - this method does not require a reference genome
 - this method does not rely solely on conservative regions like UCE
 - this method allows to obtain SNPs from both exon (often non-neutral) and intron (often neutral) regions
@@ -46,8 +46,8 @@ Exon capture is one of the most promising approaches in next generation sequenci
 - this method allows to screen tens of thousands of loci (genes) to identify those that are under selection
 
 <p align="center">
-   <img src="https://github.com/vinni-bio/EXONtools/blob/master/img/ECS_small.png" alt="Exon Capture Sequencing" width="800" height="290">
-   <i><b>Figure 1.</b> Three main stages of exon capture sequencing project on non-model organism.</i>
+   <img src="https://github.com/vinni-bio/EXONtools/blob/master/img/ECS_small.png" alt="Exon Capture Sequencing" width="800" height="250">
+   <i><b>Figure 1.</b> Three major stages of laboratory protocol for exon capture sequencing project on a non-model organism.</i>
 </p>
 
 ## EXONtools project
@@ -110,7 +110,7 @@ Please install the following Python packages with PIP:
 
 ```text
 EXONtools.py
-└── LAB WORK 1: De novo transcriptome sequencing
+└── LAB PROTOCOL I: De novo transcriptome sequencing
         └── Stage A. Processing raw reads
                ├── Step A1. Demultiplexing (demultiplex_reads)
                ├── Step A2. Formatting (format_reads)
@@ -137,9 +137,9 @@ EXONtools.py
                ├── Step C2. Mapping exons to pseudoreference (map_exons)
                └── Step C3. Designing hybridization baits (design_baits)
 
-└── LAB WORK 2: Hybridization bait synthesis and exon capture
+└── LAB PROTOCOL II: Bait synthesis and exon capture
 
-└── LAB WORK 3: Exon capture sequencing
+└── LAB PROTOCOL III: Exon capture sequencing
         └── Stage D. Processing raw reads
                ├── Step D1. Demultiplexing (demultiplex_reads)
                ├── Step D2. Formatting (format_reads)
@@ -218,19 +218,19 @@ EXONtools.py
 
 ## EXONtools general options
 
-- `-c`, `--citations`: show citations for EXONtools and all dependencies
+- `-c`, `--citations`: show citations for EXONtools and for all dependencies
 - `-D`, `--debug`: debugging mode for developers
-- `-E`, `--extra`: auxillary command line arguments for most dependency programs (for safety precautions leave a space before the opening quote, otherwise the EXONtools will raise an error).<br/>Example: `EXONtools.py --extra " -argument value" COMMAND [command options]`
+- `-E`, `--extra`: auxillary command line arguments for dependency programs (leave a blank space before the opening quote, otherwise the EXONtools command will raise an error).<br/>Example: `EXONtools.py --extra " -argument value" COMMAND [command options]`. Recommended for advanced users only.
 - `-K`, `--keeptmp`: do not delete temporary files after finishing task
 - `-L`, `--log`: additionally save all console output in `EXONtools.log` file within the current directory
 - `-l`, `--license`: show EXONtools license file
 - `-M`, `--memory`: set maximum RAM usage for dependency programs (Gb)
-- `-Q`, `--quiet`: hide console output except any critical errors (quiet mode)
-- `-R`, `--dryrun`: run pipeline command without implementing any real actions
-- `-S`, `--stats`: write a csv file with summary statistics for the current pipeline step
-- `-T`, `--threads`: number of threads to run in parallel mode
+- `-Q`, `--quiet`: hide console output except critical error messages (quiet mode)
+- `-R`, `--dryrun`: run command without implementing any real actions
+- `-S`, `--stats`: write csv file with summary statistics
+- `-T`, `--threads`: number of threads to use in parallel mode
 - `-v`, `--version`: show EXONtools current version
-- `-W`, `--warnigns`: show only warning messages in the log output
+- `-W`, `--warnigns`: hide console output except warning and critical error messages
 
 ## Supplementary EXONtools commands
 
@@ -273,14 +273,18 @@ EXONtools.py
 
 ## Glossary
 
-- ECS
-- FASTQ format
-- Hybridization baits
-- NGS
-- non-model organism
-- Pseudoreference
-- SNP
-- UCE
+- `ECS`: exon capture sequencing
+- `FASTA`: text-based file format for storing nucleotide or peptide sequences
+- `FASTQ`: text-based file format for storing nucleotide or peptide sequences produced by many next generation sequencing platforms
+- `GBS`: genotyping by sequencing
+- `Hybridization bait`: biotin-labeled oligonucleotide used to capture specific exon
+- `NGS`: next generation sequencing
+- `Non-model organism`: organism without high quality reference genome and genome annotation
+- `PE reads`: paired-end reads
+- `Pseudoreference`: annotated consensus assembly produced from various approaches/samples
+- `SE reads`: single-end reads
+- `SNP`: single nucleotide polymorphism
+- `UCE`: ultraconserved element
 
 ## Citation
 
