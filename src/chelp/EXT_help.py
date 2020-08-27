@@ -15,7 +15,7 @@ description = """
     assemble_reads          - reconstruct de novo assemblies (Steps B1, E1)
     call_bases              - trim contigs and call bases (Steps B4, E4)
     call_snps               - call and filter SNPs from all alignments (Step E10)
-    clean_reads             - filtering and trimming low quality reads, remove adapter residuals (Steps A5, D5)
+    clean_reads             - filter and trim low quality reads, remove adapter residuals (Steps A5, D5)
     clean_stacks            - filter and trim raw aligments (Step E8)
     consensus_assembly      - merge assemblies and reduce redundancy of the resulted consensus assembly (Steps B2, E2)
     correct_reads           - correct sequencing errors in reads (Steps 3A, 3D)
@@ -25,7 +25,7 @@ description = """
     design_baits            - desig oligonucleotide sequences for exon capture baits (Step C3)
     evaluate_assembly       - assess contingency quality of assemblies (Step B6a)
     evaluate_mapping        - assess read mapping quality of assemblies (Step B6b)
-    evaluate_reads          - assess sequencing read quality
+    evaluate_reads          - assess sequencing read quality (Stages A & D)
     filter_reads            - filter reads that do not pass user-defined threshold for allowed fraction of
                               repeated bases or 'N' bases, i.e. low-complexity reads (Steps A6, D6)
     format_reads            - verify fastq format, check correspondence of paired reads,
@@ -44,7 +44,7 @@ For getting the detailed information about each command, provide the help menu o
 Please check that the names of your sequence files follow the EXONtools rules of library name format:
 unpaired files: LIBNAME_anyletters.fq or LIBNAME.fasta (e.g., 'ST-1_unpaired.fq')
 paired files: LIBNAME_R1.fq or LIBNAME_R2.fq (e.g., 'ST-1_R1_paired.fq', 'ST-1_R2_paired.fq')
-'R1' and 'R2' annotations are mandatory requirements for the files with paired reads.
+'R1' and 'R2' annotations are mandatory requirments for the files with paired reads.
 Otherwise they will be considered as unpaired. A single library can only have one file
 with unpaired reads and two files with paired reads (R1 & R2).
 

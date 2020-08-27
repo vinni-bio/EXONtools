@@ -1,6 +1,6 @@
 # ENCODING: UTF-8
 
-# This file was created by Kirill Vinnikov on August 10, 2018
+# This file was created by Kirill Vinnikov on August 10, 2020
 
 # The following mapping quality is similar to Bowtie2/Tophat
 # function for single reads with global alignment

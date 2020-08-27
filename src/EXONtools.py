@@ -64,14 +64,13 @@ def main(argv):
     options.add_argument("-T", "--threads", type=int, action="store", help="Number of threads to run in parallel mode", default=1, dest="threads", metavar="<int>")
     options.add_argument('-v', '--version', help="Show EXONtools current version", action='version', version='%(prog)s' + VERSION + COPYRIGHT)
     options.add_argument("-W", "--warnigns", help="Show warnings only in the log output", action="store_true", default=False, dest="warnings")
-
     commands = options.add_subparsers(dest='action', title="Available EXONtools commands", description=EXT_help.description, prog="EXONtools.py [options]", metavar="")
 
     # STEPS A1 and D1: split FASTQ files with multiplexed data
     demultiplex_reads = commands.add_parser("demultiplex_reads", description=demultiplex_reads_help.description, usage="EXONtools.py [general options] demultiplex_reads [command options]", formatter_class=CustomFormatter, epilog=demultiplex_reads_help.epilog)
     demultiplex_reads._optionals.title = "'demultiplex_reads' command options"
     IOoptions = demultiplex_reads.add_argument_group(title="Input/Output settings")
-    IOoptions.add_argument("-i", "--in", action="store", help="Path to the directory containing read fastq files (alternative option to R1/R2/U)", type=str, required=False, metavar="<path>", dest="inpath")
+    IOoptions.add_argument("-i", "--in", action="store", help="Input path to a single FASTQ file", type=str, required=False, metavar="<path>", dest="inpath")
     IOoptions.add_argument("-o", "--out", action="store", help="Path to the output directory", type=str, default="./DEMULTIPLEX", metavar="<path>", dest="outdir")
     Dsettings = demultiplex_reads.add_argument_group(title="Demultiplexing settings")
     Dsettings.add_argument("-b", "--barcode", action="store", required=False, help="Path to the text file with library indexes. Also launches demultiplexing using barcodes", type=str, dest="barcode", metavar="<path>")
@@ -79,14 +78,14 @@ def main(argv):
     Dsettings.add_argument("--start", action="store", required=False, help="Start position of a barcode in each read sequence", type=int, dest="start", default=1, metavar="<int>")
     Dsettings.add_argument("--trim", action="store", required=False, help="Number of bases to trim additionally from each read after barcode removal", type=int, dest="trim", default=0, metavar="<int>")
     Dsettings.add_argument("-p","--pattern", action="store", required=False, help="Custom grep pattern to split reads by their name identifiers (type default to use '^@([^_:]+)[_:].*$' pattern", type=str, dest="pattern", metavar="<str>")
-    Dsettings.add_argument("-t","--tolerance", help="Rename read names using library identifiers", action="store", default=1, dest="tolerance", type=int, choices=[0, 1, 2], metavar="<int>")
+    Dsettings.add_argument("-t","--tolerance", help="Rename read names using library identifiers", action="store", default=0, dest="tolerance", type=int, choices=[0, 1, 2], metavar="<int>")
     miscopts = demultiplex_reads.add_argument_group(title="Miscellaneous command options")
-    miscopts.add_argument("--fastqc", help="Performs fastqc analysis on splitted files", action="store_true", dest="fastqc")
+    miscopts.add_argument("--rqc", help="Performs read quality check on splitted files", action="store_true", dest="rqc")
     miscopts.add_argument("--gzip", help="Compress output files", action="store_true", default=False, dest="gzoutput")
     miscopts.add_argument("--suffix", action="store", help="Ending that will be automatically added to all output file names", type=str, dest="suffix", default="", metavar="<str>")
     miscopts.add_argument("--program", default="demultiplexer", action="store", choices=['demultiplexer'], help="Indicates which program to use read demultiplexing. Choices are: ['demultiplexer']", dest="program", metavar="<program name>")
     demultiplex_reads.set_defaults(command=demultiplex_reads_com.command)
-
+    
     # STEPS A2 and D2: verify fastq format, check correspondence of paired reads, check read quality, check Illumina filters, rename reads using file name pattern, convert to FASTA format or compress files
     format_reads = commands.add_parser("format_reads", description=format_reads_help.description, usage="EXONtools.py [general options] format_reads [command options]", formatter_class=CustomFormatter, epilog=format_reads_help.epilog)
     format_reads._optionals.title = "'format_reads' command options"

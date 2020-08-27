@@ -1,13 +1,12 @@
-#! /usr/bin/env python
 # ENCODING: UTF-8
 
 
-# This file was created by Kirill Vinnikov on August 10, 2019
-# Copyright 2019 by Kirill Vinnikov. All rights reserved.
+# This file was created by Kirill Vinnikov on August 10, 2020
+# Copyright 2020 by Kirill Vinnikov. All rights reserved.
 
 # This code is a part of the EXONtools distribution and governed
 # by its license. Please see the LICENSE.txt file that should
-# have been included in the root folder of the EXONtools package.
+# have been included in the root directory of the EXONtools package.
 
 from __future__ import print_function, division
 import logging

@@ -1,12 +1,12 @@
 # ENCODING: UTF-8
 
 
-# This file was created by Kirill Vinnikov on August 10, 2019
-# Copyright 2019 by Kirill Vinnikov. All rights reserved.
+# This file was created by Kirill Vinnikov on August 10, 2020
+# Copyright 2020 by Kirill Vinnikov. All rights reserved.
 
 # This code is a part of the EXONtools distribution and governed
 # by its license. Please see the LICENSE.txt file that should
-# have been included in the root folder of the EXONtools package.
+# have been included in the root directory of the EXONtools package.
 
 from __future__ import print_function, division
 import os
@@ -48,6 +48,7 @@ class SeqIO(object):
                 self.path = os.path.realpath(path)
                 self.SEQS = None
                 self.strict = strict
+                self.total = 0
             else:
                 logging.error("Your file extension is not supported. Please use: '{0:s}'".format("', '".join(self.extensions)))
                 raise EXONtoolsError("SeqIO error")
@@ -55,7 +56,7 @@ class SeqIO(object):
             self.path = ""
         else:
             logging.error("Provided file path does not exist")
-            print(path)
+            logging.error(path)
             raise EXONtoolsError("SeqIO error")
 
     @classmethod
@@ -76,7 +77,9 @@ class SeqIO(object):
             logging.error("Cannot delete '{0:s}' file because it has not been assigned yet".format(os.path.basename(self.path)))
             raise EXONtoolsError("Cannot delete file from non-existing path")
 
-    def read(self):
+    def totalcount(self):
+        """count records"""
+
         if not SeqIO.dryrun and os.path.getsize(self.path):
 
             try:
@@ -95,6 +98,67 @@ class SeqIO(object):
             if self.type == "sam" and line:
                 while(line):
                     if not line.startswith("@"):            # skip all headers if present
+                        self.total += 1
+                    line = infile.readline().strip()
+                infile.close()
+
+            elif self.type == "fasta" and line:
+                if line.startswith(">"):
+                    while(line):
+                        if line.startswith(">"):
+                            self.total += 1
+                            line = infile.readline().strip()
+                        else:
+                            line = infile.readline().strip()
+                else:
+                    logging.error("The first line in FASTA file should start with '>' sign")
+                    raise EXONtoolsError("SeqIO error")
+                infile.close()
+
+            elif self.type == "fastq" and line:
+                if line.startswith("@"):
+                    while(line):
+                        if line.startswith("@"):
+                            self.total += 1
+                            line = infile.readline().strip()
+                            line = infile.readline().strip()
+                            line = infile.readline().strip()
+                        else:
+                            line = infile.readline().strip()
+                else:
+                    logging.error("The first line in FASTQ file should start with '@' sign")
+                    raise EXONtoolsError("SeqIO error")
+                infile.close()
+
+            elif not line:
+                pass
+
+            else:
+                logging.error("The format for SeqIO operation is not defined. This is probably a program bug")
+                raise EXONtoolsError("SeqIO error")
+
+    def read(self):
+        """Read file records"""
+
+        if not SeqIO.dryrun and os.path.getsize(self.path):
+            self.total = 0
+            try:
+                if self.path.endswith(".gz"):
+                    infile = gzip.open(self.path, 'rt')
+                else:
+                    infile = open(self.path, 'r')
+            except IOError:
+                logging.error("Cannot open input file {0:s}. Please verify its format.".format(os.base.name(self.path)))
+                raise EXONtoolsError("SeqIO error")
+
+            line = infile.readline().strip()
+            while(line and line == ""):
+                line = infile.readline().strip()
+
+            if self.type == "sam" and line:
+                while(line):
+                    if not line.startswith("@"):            # skip all headers if present
+                        self.total += 1
                         yield samline(line)
                     line = infile.readline().strip()
                 infile.close()
@@ -112,6 +176,7 @@ class SeqIO(object):
                                 line = infile.readline().strip()
                                 if line is None or line.startswith(">"):
                                     break
+                            self.total += 1
                             yield fastaseq(seqname, seqline.upper())
                         else:
                             line = infile.readline().strip()
@@ -151,6 +216,7 @@ class SeqIO(object):
                             infoline = infile.readline().strip()[1:]
                             qualline = infile.readline().strip()
                             line = infile.readline().strip()
+                            self.total += 1
                             yield fastqseq(identifierline, seqname, seqline, qualline, infoline, paired, extra, filtered, barcode)
                         else:
                             line = infile.readline().strip()

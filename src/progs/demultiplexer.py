@@ -16,19 +16,16 @@ import csv
 import pdb
 import gzip
 import itertools
-import sys
 import time
 
 from mains.EXT_prog import EXTprogram
 from mains.EXT_IO import getinput, output, makenewdir
 from mains.EXT_executor import executor
-from mains.EXT_worker import worker
-from mains.EXT_parallel import hard_worker, create_pool, close_pool, run_instance, set_threads
 from mains.EXT_errors import EXONtoolsError
 from utils.revcomp import DNArevcomp
 from utils.sorting import natural_sort
 from utils.seqIO import SeqIO
-from utils.fastqc import fastqc_test
+from utils.rqc import rqc_test
 from utils.progbar import printProgressBar
 
 
@@ -39,60 +36,72 @@ class demultiplexer(EXTprogram):
 
     def execute_program(self):
         args = self.args
-        self.demultiplex_reads(args.inpath, args.outdir, args.barcode, args.inseqsearch, args.start, args.trim, args.pattern, args.tolerance, args.gzoutput, args.fastqc)
+        self.demultiplex_reads(args.inpath, args.outdir, args.barcode, args.inseqsearch, args.start, args.trim, args.pattern, args.tolerance, args.gzoutput, args.rqc)
 
-    def demultiplex_reads(self, inpath, outdir, barcode, inseqsearch, start, trim, pattern, tolerance, gzoutput, fastqc):
+    def demultiplex_reads(self, inpath, outdir, barcode, inseqsearch, start, trim, pattern, tolerance, gzoutput, rqc):
 
         if demultiplexer.debug:
             pdb.set_trace()
 
         # SET DRY RUN AND DEBUGGING MODES FOR SUBCLASSES
+        logging.debug("Setting dry and debugging modes for subclasses")
         demultiplexer.run_dry(SeqIO, getinput, output, makenewdir, executor)
         demultiplexer.set_debug(executor)
 
-        if fastqc:
-            executor.setconfig("fastqc")
-
-        # SET DRY RUN AND DEBUGGING MODES FOR SUBCLASSES
-        demultiplexer.run_dry(getinput, output, makenewdir, executor)
-        demultiplexer.set_debug(executor)
+        if rqc:
+            executor.setconfig("fastqc", "multiqc")
 
         if demultiplexer.debug:
             pdb.set_trace()
+
+        # PERFORM ALL CHECKS
+        logging.debug("Performing input parameter checks")
 
         if demultiplexer.extra:
             logging.warning("Extra string argument cannot be used in 'demultiplexer' program and therefore will be ommited")
 
         if barcode and pattern:
-            logging.error("'--pattern' and '--barcode' flags are mutually exclusive. You cannot use them together")
+            logging.error("'--pattern' and '--barcode' flags are mutually exclusive. You cannot use them together in one run")
             raise EXONtoolsError("Demultiplexer command line error")
         elif barcode:
             logging.info("Barcode option was enabled for demultiplexing")
             barcodes = get_barcodes(barcode)
             if inseqsearch:
                 logging.warning("Library barcodes will be searched within read sequences")
+                if '+' in (list(barcodes.keys())[0]):
+                    logging.error("Dual indexes cannot be used for inread search")
+                    logging.error("Please correct your input command and try again")
+                    raise EXONtoolsError("Demultiplexer command line error")
         elif pattern:
             logging.info("Library name pattern option was enabled")
             if pattern == "default":
                 pattern = "^@([^_:]+)[_:].*$"
             if pattern.count("(") != 1 or pattern.count(")") != 1:
-                logging.error("Include round parentheses into your RegExp pattern to capture specific fragment")
+                logging.error("Capture a single pattern using round parentheses in your RegExp")
                 raise EXONtoolsError("GREP pattern error")
             logging.info("GREP pattern '{0}' will be used for demultiplexing".format(pattern))
         else:
-            logging.error("You must provide either '--barcode' or '--pattern' option to start demultiplexer")
+            logging.error("You must provide either '--barcode' or '--pattern' option to start the demultiplexer program")
             raise EXONtoolsError("Demultiplexer command line error")
 
-        # GET READ INPUT FILES
-        logging.info("The following files with sequecing reads will be demultiplexed")
+        # GET READ INPUT FILE
+        logging.info("The following file with sequencing reads will be demultiplexed")
         getinput.format(['.fq', '.fastq', '.fastq.gz', '.fq.gz'])
         FileList = getinput(inpath).files
+        if len(FileList) > 1:
+            logging.error("Demultiplexer program can work with single FASTQ files")
+            raise EXONtoolsError("I/O error")
+        elif len(FileList) == 0:
+            logging.error("No files were found to demultiplex")
+            raise EXONtoolsError("I/O error")
+        else:
+            inpathfile = FileList[0]
 
         # MAKE OUTPUT DIRECTORY
         output(outdir)
 
         # MAKE TMP DIRECTORIES
-        tmpdir = makenewdir(name="tmp", fullname="temporary")
+        # tmpdir = makenewdir(name="tmp", fullname="temporary")
 
         if gzoutput:
             logging.warning("All output FASTQ files will be compressed with gzip")
@@ -102,114 +111,46 @@ class demultiplexer(EXTprogram):
         if demultiplexer.debug:
             pdb.set_trace()
 
-        # Count total reads in FASTQ files
-        TASKS = []
-        for inpathfile in FileList:
-            TASKS.append(worker(count_reads, [inpathfile]))
-
-        logging.info("Counting reads in FASTQ files")
-        if TASKS:
-            processes_requested = set_threads("Read counter", len(TASKS), demultiplexer.threads)
-            pool = create_pool(processes_requested)
-            jobs = hard_worker(run_instance, TASKS, pool)
-            close_pool(pool)
-
-        totalreads = 0
-        for result in jobs:
-            for infile in result:
-                totalreads += result[infile]
-
-        logging.info("{0:d} reads are found in input file(s)".format(totalreads))
-
-        ncluster = int(totalreads / demultiplexer.threads)
-        ncluster_orig = int(totalreads / demultiplexer.threads) + 1
-
-        counter = 0
-        inFileList = []
-        for inpathseq in FileList:
-            infileseq = SeqIO(inpathseq, fileformat="FASTQ")
-            outfilename = "clust1_" + os.path.basename(inpathseq)
-            inFileList = [os.path.join(tmpdir.path, outfilename)]
-            for inread in infileseq.read():
-                counter += 1
-                with open(os.path.join(tmpdir.path, outfilename), 'a') as outfile:
-                    outfile.write("@{0:s} {1:s}\n{2:s}\n+{3:s}\n{4:s}\n".format(inread.name, inread.extra, inread.seq, inread.info, inread.qual))
-                if counter > ncluster:
-                    ncluster += ncluster_orig
-                    outfilename = "clust" + str(ncluster) + "_" + os.path.basename(inpathseq)
-                    inFileList.append(os.path.join(tmpdir.path, outfilename))
-
-        # Collects all tasks
-        TASKS = []
-
-        logging.debug("Preparing tasks for your demultiplex analysis")
-
-        outmpdirs = []
-        for inpathfile in inFileList:
-            outtmpdir = makenewdir(os.path.join(tmpdir.path, inpathfile.split("_")[0]))
-            outmpdirs.append(outtmpdir.path)
-            if barcode:
-                TASKS.append(worker(debarcode, [barcodes, inpathfile, outtmpdir.path, "_demux", tolerance, inseqsearch, trim, start, gzoutput, ncluster_orig]))
-            else:
-                TASKS.append(worker(demux, [inpathfile, outtmpdir.path, pattern, "_unpaired", gzoutput, ncluster_orig]))
+        logging.info("Counting the total number of reads")
+        totalreads = count_reads(inpathfile)
+        logging.info("{0:d} reads are found in the input file".format(totalreads))
 
         if demultiplexer.debug:
             pdb.set_trace()
 
-        logging.info("Running demultiplexing analysis for all selected files")
-        if TASKS:
-            processes_requested = set_threads("Read demultiplexer", len(TASKS), demultiplexer.threads)
-            pool = create_pool(processes_requested)
-            jobs = hard_worker(run_instance, TASKS, pool)
-            close_pool(pool)
+        if pattern:
+            stats_collector = demux(inpathfile, output.path, pattern, demultiplexer.suffix, gzoutput, totalreads)
 
-        mergedirs(outmpdirs, output.path)
-
-        tmpdir.delete()
-
-        stats_collector = {}
-        final_stats = {}
-        if jobs:
-            for result in jobs:
-                stats_collector.update(result)
-            del jobs
-        else:
-            logging.error("Multiprocessing error in demultiplexing analysis")
-            raise EXONtoolsError("Demultiplex error")
-
-        for filename in stats_collector:
-            for libname in stats_collector[filename]:
-                try:
-                    final_stats[libname] += stats_collector[filename][libname]
-                except KeyError:
-                    final_stats[libname] = stats_collector[filename][libname]
-
-        logging.debug("Demultiplex analysis succesfully finished: OK")
+        if barcode:
+            stats_collector = debarcode(barcodes, inpathfile, output.path, demultiplexer.suffix, tolerance, inseqsearch, trim, start, gzoutput, totalreads)
 
         if demultiplexer.debug:
             pdb.set_trace()
 
+        # SAVE STATS
         if demultiplexer.stats and not demultiplexer.dryrun:
             statdir = makenewdir(name=os.path.join(output.path, "STATS"), fullname="STATS")
             logging.info("Demultiplexing stats will be saved to 'STATS/demux_stats.csv'")
-            header = ["No", "Library", "#READS"]
+            header = ["No", "Library", "NRreads"]
+            undefined_count = stats_collector.pop('undefined_count')
             with open(os.path.join(statdir.path, "demux_stats.csv"), 'w') as statfile:
                 csv_writer = csv.writer(statfile)
                 csv_writer.writerow(header)
-                for i, libname in enumerate(sorted(final_stats.keys(), key=natural_sort)):
-                    csv_writer.writerow([i + 1, libname, final_stats[libname]])
+                for i, libname in enumerate(sorted(stats_collector.keys(), key=natural_sort)):
+                    csv_writer.writerow([i + 1, libname, stats_collector[libname]])
+                csv_writer.writerow([i + 2, 'undefined_count', undefined_count])
             logging.debug("Demultiplexing stats were successfully written to the file: OK")
 
             if demultiplexer.debug:
                 pdb.set_trace()
 
-        # PERFORMS FASTQC TESTS
-        if not os.path.exists(statdir.path):
+        # PERFORMS READ QUALITY TESTS
+        if rqc and not demultiplexer.stats:
             statdir = makenewdir(name=os.path.join(output.path, "STATS"), fullname="STATS")
-        if fastqc and gzoutput and not demultiplexer.dryrun:
-            fastqc_test(output.path, statdir.path, demultiplexer.threads, extension="*.gz", comment="Demultiplexing analysis")
-        elif fastqc and not demultiplexer.dryrun:
-            fastqc_test(output.path, statdir.path, demultiplexer.threads, comment="Demultiplexing analysis")
+        if rqc and gzoutput and not demultiplexer.dryrun:
+            rqc_test(output.path, statdir.path, demultiplexer.threads, extension="*.gz", comment="Demultiplexing analysis")
+        elif rqc and not demultiplexer.dryrun:
+            rqc_test(output.path, statdir.path, demultiplexer.threads, comment="Demultiplexing analysis")
         else:
             pass
 
@@ -222,7 +163,7 @@ def get_barcodes(barcpath):
 
     try:
         with open(barcpath, 'r') as barcfile:
-            logging.info("Parsing file with barcodes from:")
+            logging.info("Parsing the file with barcodes:")
             logging.info(barcpath)
             barcodes = {}
             for line in barcfile:
@@ -254,16 +195,21 @@ def debarcode(barcodes, filepath, outpath, suffix, tolerance, inseq, trim, start
 
     total_defined = 0
     undefined_count = 0
+
     barc_stats = {x: 0 for x in list(barcodes.values())}
+
     if inseq:
         barcrange = (min(map(len, list(barcodes.keys()))), max(map(len, list(barcodes.keys()))))
+
         if len(barcrange) != len(set(barcrange)):
             barcrange = barcrange[0]
+
         infileseq = SeqIO(filepath, fileformat="FASTQ")
-        for i, read in enumerate(infileseq.read()):
-            printProgressBar(i, total, prefix="", suffix="", decimals=1, length=100, fill='█', printEnd="\r")
+
+        for read in infileseq.read():
             barc_list = []
             selected_barc = {}
+
             for i in range(barcrange[0], barcrange[1] + 1):
                 barc = read.seq[start - 1:start - 1 + i]
                 result = tolerate_barcode(barc, tolerance)
@@ -286,12 +232,16 @@ def debarcode(barcodes, filepath, outpath, suffix, tolerance, inseq, trim, start
                 file_name = os.path.join(outpath, libname + suffix + ".fq")
                 readseq = read.seq[len(barcseq) + trim:]
                 qualseq = read.qual[len(barcseq) + trim:]
+                if read.extra.endswith(':'):
+                    extrapart = read.extra + barcseq
+                else:
+                    extrapart = read.extra
                 if gzout:
                     with gzip.open(file_name + ".gz", "at") as outfile:
-                        outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, read.extra, readseq, read.info, qualseq))
+                        outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, extrapart, readseq, read.info, qualseq))
                 else:
                     with open(file_name, "a") as outfile:
-                        outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, read.extra, readseq, read.info, qualseq))
+                        outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, extrapart, readseq, read.info, qualseq))
 
             # SAVES UNMATCHED READS or READS WITH MULTIPLE MATCHES
             else:
@@ -304,6 +254,7 @@ def debarcode(barcodes, filepath, outpath, suffix, tolerance, inseq, trim, start
                     with open(file_name, "a") as outfile:
                         outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, read.extra, read.seq, read.info, read.qual))
 
+            printProgressBar(infileseq.total, total, prefix="", suffix="", decimals=1, length=100, fill='█', printEnd="\r")
     else:
         infileseq = SeqIO(filepath, fileformat="FASTQ")
 
@@ -348,13 +299,16 @@ def debarcode(barcodes, filepath, outpath, suffix, tolerance, inseq, trim, start
                 else:
                     with open(file_name, "a") as outfile:
                         outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, read.extra, read.seq, read.info, read.qual))
+        printProgressBar(infileseq.total, total, prefix="", suffix="", decimals=1, length=100, fill='█', printEnd="\r")
+
+    logging.info("Read demultiplexing is compete: ")
+    time.sleep(0.5)
 
     barc_stats["undefined_count"] = undefined_count
-    os.remove(filepath)
     logging.info("Total {0} reads were demultiplexed in {1}".format(total_defined, os.path.basename(filepath)))
     logging.info("Total {0} reads were not identified in {1}".format(undefined_count, os.path.basename(filepath)))
 
-    return {os.path.basename(filepath): barc_stats}
+    return barc_stats
 
 
 def tolerate_barcode(barcode, tolerance):
@@ -422,6 +376,8 @@ def replaceN(barcode):
 def demux(filepath, outpath, pattern, suffix, gzout, total):
     """Demultiplex reads using GREP pattern in read name identifier"""
 
+    logging.info("Running the demultiplexing analysis using provided read name pattern")
+
     total_defined = 0
     undefined_count = 0
     demux_stats = {}
@@ -453,6 +409,11 @@ def demux(filepath, outpath, pattern, suffix, gzout, total):
                 with open(os.path.join(outpath, "Undefined_reads" + suffix + ".fq"), "a") as outfile:
                     outfile.write("@{0}\n{1}\n+{2}\n{3}\n".format(read.name + " " + read.extra.strip(), read.seq, read.info, read.qual))
 
+        printProgressBar(infileseq.total, total, prefix="", suffix="", decimals=1, length=100, fill='█', printEnd="\r")
+
+    logging.info("Read demultiplexing is compete: ")
+    time.sleep(0.5)
+
     demux_stats["undefined_count"] = undefined_count
 
     logging.info("Total {0} reads were demultiplexed in {1}".format(total_defined, os.path.basename(filepath)))
@@ -472,30 +433,11 @@ def check_pattern(pattern, line):
             raise EXONtoolsError("Search pattern error")
     else:
         return
-        # logging.error("No matches found based on provided pattern. Please check your pattern settings")
-        # raise EXONtoolsError("Search pattern error")
 
     return result[0]
 
 
 def count_reads(inpath):
-
-    counter = 0
     infileseq = SeqIO(inpath, fileformat="FASTQ")
-    for r in infileseq.read():
-        counter += 1
-
-    return {os.path.basename(inpath): counter}
-
-
-def mergedirs(DirList, outpath):
-    """Merge files from all folders"""
-
-    for indir in DirList:
-        FileList = os.listdir(indir)
-        for file in FileList:
-            with open(os.path.join(indir, file), 'r') as infile:
-                with open(os.path.join(outpath, file), 'a') as outfile:
-                    for line in infile:
-                        outfile.write(line)
-            os.remove(os.path.join(indir, file))
+    infileseq.totalcount()
+    return infileseq.total
