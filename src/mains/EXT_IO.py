@@ -1,11 +1,11 @@
 # ENCODING: UTF-8
 
-# This file was created by Kirill Vinnikov on August 10, 2019
-# Copyright 2019 by Kirill Vinnikov. All rights reserved.
+# This file was created by Kirill Vinnikov on August 10, 2020
+# Copyright 2020 by Kirill Vinnikov. All rights reserved.
 
 # This code is a part of the EXONtools distribution and governed
 # by its license. Please see the LICENSE.txt file that should
-# have been included in the root folder of the EXONtools package.
+# have been included in the root directory of the EXONtools package.
 
 from __future__ import print_function
 import logging
@@ -18,7 +18,7 @@ from utils.sorting import natural_sort
 
 
 class output(object):
-    """The class that administrates the output folder"""
+    """The class that administrates the output directory"""
 
     path = None
     dryrun = False
@@ -40,11 +40,11 @@ class output(object):
 
     @classmethod
     def delete(cls):
-        logging.info("Deleting the output folder {0:s}".format(output.path))
+        logging.info("Deleting the output directory {0:s}".format(output.path))
         try:
             if not output.dryrun:
                 shutil.rmtree(output.path)
-            logging.debug("The output folder was deleted: OK")
+            logging.debug("The output directory was deleted: OK")
         except OSError as e:
             if e.errno == 2:
                 pass
@@ -62,10 +62,10 @@ class output(object):
         if os.path.exists(outpath) and os.path.isdir(outpath):
             outdir = os.path.abspath(outpath)
             if len(os.listdir(outdir)) > 0 and output.strict:
-                logging.error("The output directory exists and is not empty. Please provide another path or clean the folder\n")
+                logging.error("The output directory exists and is not empty. Please provide another path or clean the directory\n")
                 raise EXONtoolsError("The output directory exists and is not empty.")
             else:
-                logging.debug("The existing output folder will be used: OK")
+                logging.debug("The existing output directory will be used: OK")
                 return outdir
         elif len(outpath_list) == 1 and outpath_list[0][0].isalpha():
             outdir = os.path.join(os.path.realpath(os.curdir), outpath_list[0])
@@ -75,17 +75,17 @@ class output(object):
             logging.error("Something wrong happened when EXONtools was trying to create the output directory. Try another path")
             raise EXONtoolsError("Cannot create the output directory")
         try:
-            logging.info("Creating the output folder {0:s}".format(outdir))
+            logging.info("Creating the output directory {0:s}".format(outdir))
             if not output.dryrun:
                 os.mkdir(outdir)
-            logging.debug("The output folder is created: OK")
+            logging.debug("The output directory is created: OK")
             return outdir
         except OSError as e:
             if e.errno == 17:
                 logging.error("The output directory exists and is not empty. Please provide another path.")
                 raise EXONtoolsError
             else:
-                logging.error("Something wrong happened when EXONtools was trying to create the output directory. Try to provide another path for output folder")
+                logging.error("Something wrong happened when EXONtools was trying to create the output directory. Try to provide another path for output directory")
                 raise EXONtoolsError("Cannot create the output directory")
 
 
@@ -294,7 +294,7 @@ def parseinput(inpath, forward, reverse):
 
 
 class makenewdir(object):
-    """This class creates and contols the new folder within the output folder or by provided path"""
+    """This class creates and contols the new directory within the output directory or by provided path"""
 
     dryrun = False
 
@@ -304,41 +304,41 @@ class makenewdir(object):
             self.path = name
             self.name = os.path.basename(name)
             self.fullname = fullname
-            logging.debug("Creating the {0:s} folder {1:s}".format(self.fullname, self.path))
+            logging.debug("Creating the {0:s} directory {1:s}".format(self.fullname, self.path))
 
         elif output.path:
             self.name = name
             self.fullname = fullname
             self.path = os.path.join(output.path, self.name)
-            logging.debug("Creating the {0:s} folder {1:s}".format(self.fullname, self.path))
+            logging.debug("Creating the {0:s} directory {1:s}".format(self.fullname, self.path))
         else:
-            logging.error("The folder can be initialized only after the output folder and name assignation.")
-            raise EXONtoolsError("The output folder must be initialized first")
+            logging.error("The directory can be initialized only after the output directory and name assignation.")
+            raise EXONtoolsError("The output directory must be initialized first")
 
         if not makenewdir.dryrun:
             try:
                 os.mkdir(self.path)
-                logging.debug("The {0:s} folder was created: OK".format(self.fullname))
+                logging.debug("The {0:s} directory was created: OK".format(self.fullname))
             except OSError as e:
                 if e.errno == 17 and not makenewdir.dryrun:
                     shutil.rmtree(self.path)
                     os.mkdir(self.path)
                 else:
-                    logging.error("Some error occured during creation of the {0:s} folder".format(self.fullname))
-                    raise EXONtoolsError("Cannot create the folder")
+                    logging.error("Some error occured during creation of the {0:s} directory".format(self.fullname))
+                    raise EXONtoolsError("Cannot create the directory")
 
     def delete(self):
-        logging.debug("Deleting the {0:s} folder {1:s}".format(self.fullname, self.path))
+        logging.debug("Deleting the {0:s} directory {1:s}".format(self.fullname, self.path))
         try:
             if not makenewdir.dryrun:
                 shutil.rmtree(self.path)
-            logging.debug("The {0:s} folder was deleted: OK".format(self.fullname))
+            logging.debug("The {0:s} directory was deleted: OK".format(self.fullname))
         except OSError as e:
             if e.errno == 2:
                 pass
             else:
                 logging.error("Something wrong happened when EXONtools was trying to delete the {0:s} directory".format(self.fullname))
-                raise EXONtoolsError("Cannot delete the folder")
+                raise EXONtoolsError("Cannot delete the directory")
         except TypeError:
             logging.error("Cannot delete the {0:s} directory because it has not been assigned yet".format(self.fullname))
             raise EXONtoolsError("Cannot delete directory from non-existing path")

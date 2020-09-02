@@ -45,6 +45,6 @@ def rqc_test(indir, outdir, threads, extension="*.fq", filetype="fastq", comment
         custom_arg_string=" > /dev/null 2>&1"
     ))
 
-    RQCdir.delete()
+    # RQCdir.delete()
 
     logging.debug("Read quality analysis completed: OK")

@@ -2,6 +2,7 @@ __all__ = [
     "annotate_contigs_com",
     "assemble_reads_com",
     "call_bases_com",
+    "clean_reads_com",
     "consensus_assembly_com",
     "demultiplex_reads_com",
     "evaluate_assembly_com",

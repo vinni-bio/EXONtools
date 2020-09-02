@@ -77,7 +77,7 @@ class SeqIO(object):
             logging.error("Cannot delete '{0:s}' file because it has not been assigned yet".format(os.path.basename(self.path)))
             raise EXONtoolsError("Cannot delete file from non-existing path")
 
-    def totalcount(self):
+    def totalcount(self, lines = False):
         """count records"""
 
         if not SeqIO.dryrun and os.path.getsize(self.path):
@@ -91,51 +91,56 @@ class SeqIO(object):
                 logging.error("Cannot open input file {0:s}. Please verify its format.".format(os.base.name(self.path)))
                 raise EXONtoolsError("SeqIO error")
 
-            line = infile.readline().strip()
-            while(line and line == ""):
-                line = infile.readline().strip()
-
-            if self.type == "sam" and line:
-                while(line):
-                    if not line.startswith("@"):            # skip all headers if present
-                        self.total += 1
-                    line = infile.readline().strip()
+            if lines:
+                self.total = sum(bl.count('\n') for bl in readblock(infile))
                 infile.close()
-
-            elif self.type == "fasta" and line:
-                if line.startswith(">"):
-                    while(line):
-                        if line.startswith(">"):
-                            self.total += 1
-                            line = infile.readline().strip()
-                        else:
-                            line = infile.readline().strip()
-                else:
-                    logging.error("The first line in FASTA file should start with '>' sign")
-                    raise EXONtoolsError("SeqIO error")
-                infile.close()
-
-            elif self.type == "fastq" and line:
-                if line.startswith("@"):
-                    while(line):
-                        if line.startswith("@"):
-                            self.total += 1
-                            line = infile.readline().strip()
-                            line = infile.readline().strip()
-                            line = infile.readline().strip()
-                        else:
-                            line = infile.readline().strip()
-                else:
-                    logging.error("The first line in FASTQ file should start with '@' sign")
-                    raise EXONtoolsError("SeqIO error")
-                infile.close()
-
-            elif not line:
-                pass
 
             else:
-                logging.error("The format for SeqIO operation is not defined. This is probably a program bug")
-                raise EXONtoolsError("SeqIO error")
+                line = infile.readline().strip()
+                while(line and line == ""):
+                    line = infile.readline().strip()
+
+                if self.type == "sam" and line:
+                    while(line):
+                        if not line.startswith("@"):            # skip all headers if present
+                            self.total += 1
+                        line = infile.readline().strip()
+                    infile.close()
+
+                elif self.type == "fasta" and line:
+                    if line.startswith(">"):
+                        while(line):
+                            if line.startswith(">"):
+                                self.total += 1
+                                line = infile.readline().strip()
+                            else:
+                                line = infile.readline().strip()
+                    else:
+                        logging.error("The first line in FASTA file should start with '>' sign")
+                        raise EXONtoolsError("SeqIO error")
+                    infile.close()
+
+                elif self.type == "fastq" and line:
+                    if line.startswith("@"):
+                        while(line):
+                            if line.startswith("@"):
+                                self.total += 1
+                                infile.readline()
+                                infile.readline()
+                                line = infile.readline().strip()
+                            else:
+                                line = infile.readline().strip()
+                    else:
+                        logging.error("The first line in FASTQ file should start with '@' sign")
+                        raise EXONtoolsError("SeqIO error")
+                    infile.close()
+
+                elif not line:
+                    pass
+
+                else:
+                    logging.error("The format for SeqIO operation is not defined. This is probably a program bug")
+                    raise EXONtoolsError("SeqIO error")
 
     def read(self):
         """Read file records"""
@@ -462,3 +467,14 @@ class samline(object):
             raise EXONtoolsError("Read addition error")
         if self.alqual < 0:
             self.alqual = 0
+
+
+def readblock(infile, size=65536):
+    """Read file block"""
+
+    while True:
+        b = infile.read(size)
+        if not b:
+            break
+        yield b
+        

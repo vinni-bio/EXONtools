@@ -24,70 +24,82 @@ def DefaultConfig():
     """Writes the default config file"""
 
     config = RawConfigParser(allow_no_value=True)
-    cfg_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "dependencies.ini")
+    cfg_path = os.path.join(os.path.dirname(os.path.realpath(sys.argv[0])), "dependencies.ini")
 
     config.add_section("PATHS")
     config.set("PATHS", "########## PROVIDE LOCAL PATHS FOR THE DEPENDENCIES HERE ##########")
     config.set("PATHS", "#### OR CHANGE TO A BLANK FIELD IF YOU DON'T NEED THE PROGRAM #####")
     config.set("PATHS", "ABYSS", "default")
+    config.set("PATHS", "BBTOOLS", "default")
     config.set("PATHS", "BLAST", "default")
     config.set("PATHS", "BLAT", "default")
     config.set("PATHS", "BOWTIE2", "default")
     config.set("PATHS", "BWA", "default")
     config.set("PATHS", "CAP3", "default")
     config.set("PATHS", "CDHIT", "default")
+    config.set("PATHS", "CUTADAPT", "default")
     config.set("PATHS", "FASTQC", "default")
     config.set("PATHS", "MULTIQC", "default")
     config.set("PATHS", "SAMTOOLS", "default")
     config.set("PATHS", "SPADES", "default")
+    config.set("PATHS", "TRIMMOMATIC", "default")
     config.set("PATHS", "TRINITY", "default")
     config.set("PATHS", "TRANSABYSS", "default")
 
     config.add_section("FORMATS")
     config.set("FORMATS", "########## PLEASE DON'T CHANGE ANYTHING HERE ##########")
     config.set("FORMATS", "ABYSS", "file")
+    config.set("FORMATS", "BBTOOLS", "directory")
     config.set("FORMATS", "BLAST", "directory")
     config.set("FORMATS", "BLAT", "file")
     config.set("FORMATS", "BOWTIE2", "directory")
     config.set("FORMATS", "BWA", "file")
     config.set("FORMATS", "CAP3", "file")
     config.set("FORMATS", "CDHIT", "directory")
+    config.set("FORMATS", "CUTADAPT", "file")
     config.set("FORMATS", "FASTQC", "file")
     config.set("FORMATS", "MULTIQC", "file")
     config.set("FORMATS", "SAMTOOLS", "file")
     config.set("FORMATS", "SPADES", "file")
+    config.set("FORMATS", "TRIMMOMATIC", "file")
     config.set("FORMATS", "TRINITY", "file")
     config.set("FORMATS", "TRANSABYSS", "file")
 
     config.add_section("PROGRAMS")
     config.set("PROGRAMS", "########## PLEASE DON'T CHANGE ANYTHING HERE ##########")
     config.set("PROGRAMS", "ABYSS", ["abyss-pe"])
+    config.set("PROGRAMS", "BBTOOLS", ["bbduk.sh", "bbmerge.sh"])
     config.set("PROGRAMS", "BLAST", ["makeblastdb", "blastn", "blastx", "blastp", "tblastn", "tblastx"])
     config.set("PROGRAMS", "BLAT", ["blat"])
     config.set("PROGRAMS", "BOWTIE2", ["bowtie2", "bowtie2-build"])
     config.set("PROGRAMS", "BWA", ["bwa"])
     config.set("PROGRAMS", "CAP3", ["cap3"])
     config.set("PROGRAMS", "CDHIT", ["cd-hit-est"])
+    config.set("PROGRAMS", "CUTADAPT", ["cutadapt"])
     config.set("PROGRAMS", "FASTQC", ["fastqc"])
     config.set("PROGRAMS", "MULTIQC", ["multiqc"])
     config.set("PROGRAMS", "SAMTOOLS", ["samtools"])
-    config.set("PROGRAMS", "SPADES", ["spades"])
+    config.set("PROGRAMS", "SPADES", ["spades.py"])
+    config.set("PROGRAMS", "TRIMMOMATIC", ["trimmomatic"])
     config.set("PROGRAMS", "TRINITY", ["trinity"])
     config.set("PROGRAMS", "TRANSABYSS", ["transabyss"])
 
     config.add_section("VERSIONS")
     config.set("VERSIONS", "########## OPTIONAL DEPENDENCY VERSION CHECK ##########")
     config.set("VERSIONS", "ABYSS", "2")
+    config.set("VERSIONS", "BBTOOLS", "38.00")
     config.set("VERSIONS", "BLAST", "2.7")
     config.set("VERSIONS", "BLAT", "NA")
     config.set("VERSIONS", "BOWTIE2", "2.2")
     config.set("VERSIONS", "BWA", "0.7")
     config.set("VERSIONS", "CAP3", "NA")
     config.set("VERSIONS", "CDHIT", "4.2")
+    config.set("VERSIONS", "CUTADAPT", "2.8")
     config.set("VERSIONS", "FASTQC", "0.11")
     config.set("VERSIONS", "MULTIQC", "1.8")
     config.set("VERSIONS", "SAMTOOLS", "1.7")
     config.set("VERSIONS", "SPADES", "3.0")
+    config.set("VERSIONS", "TRIMMOMATIC", "0.36")
     config.set("VERSIONS", "TRINITY", "2.6")
     config.set("VERSIONS", "TRANSABYSS", "2")
 
@@ -313,16 +325,19 @@ class executor(object):
 
         arg_templates = {
             "abyss": (" --version", lambda x: x.strip().split("\n")[0].split()[-1]),
+            "bbtools": (" -v", lambda x: x.strip().split("Version: ")[1].split('\n')[0].strip()),
             "bowtie2": (" --version", lambda x: x.strip().split("\n")[0].split()[-1]),
             "blast": (" -version", lambda x: x.strip().split("\n")[0].split()[-1]),
-            "bwa": ("", lambda x: x.strip().split("Version: ")[1].split('\n')[0]),
+            "bwa": ("", lambda x: x.strip().split("Version: ")[1].split('\n')[0].strip()),
             "cdhit": ("", lambda x: x.strip().split()[3]),
+            "cutadapt": (" --version", lambda x: x.strip()),
             "fastqc": (" -v", lambda x: x.strip().split()[1]),
             "multiqc": (" --version", lambda x: x.strip().split()[2]),
             "samtools": (" --version", lambda x: x.strip().split("\n")[0].split()[-1]),
-            "spades": (" --version", lambda x: x.strip().split("\n")[0].split()[-1]),
-            "trinity": (" --version", lambda x: x.strip().split("\n")[0].split()[-1]),
+            "spades.py": (" --version", lambda x: x.strip().split("\n")[0].split()[-1]),
             "transabyss": (" --version", lambda x: x.strip()),
+            "trimmomatic": (" -version", lambda x: x.strip()),
+            "trinity": (" --version", lambda x: x.strip().split("\n")[0].split()[-1]),
             "uname": (" -a", lambda x: x.strip().split()[2])
         }
 
@@ -334,6 +349,8 @@ class executor(object):
                     version_com = executor.program_paths["cd-hit-est"] + arg_templates[program][0]
                 elif program == "blast":
                     version_com = executor.program_paths["blastn"] + arg_templates[program][0]
+                elif program == "bbtools":
+                    version_com = executor.program_paths["bbduk.sh"] + arg_templates[program][0]
                 else:
                     version_com = executor.program_paths[program] + arg_templates[program][0]
 
@@ -396,8 +413,10 @@ class executor(object):
         arg_templates = {
             # ./abyss-pe --directory= mpirun= np= j= k= c= e= n= E=0 name= in= se=
             "abyss-pe": " --directory={0:s} {1:s} j={2:d} {3:s} E=0 name={4:s} {5:s}",
-            # ./makeblastdb -in INFILE -out DBDIR/NAME -dbtype TYPE
-            "makeblastdb": " -in {0:s} -out {1:s} -dbtype {2:s}",
+            # "bbduk"  MEMORY %s %s THREADS qin=PHRED
+            "bbduk.sh": " -Xmx{0:d}m {1:s} {2:s} t={3:d} qin={4:s}",
+            # "bbmerge": MEMORY THREADS in1=INFILE1 in2=INFILE2 out=MERGED out1=OUTFILE1 out2=OUTFILE2...
+            "bbmerge.sh": "-Xmx{0:d}m -t={1:d} in1={2:s} in2={3:s} out={4:s} outu1={5:s} outu2={6:s} interleaved=f ordered=t minoverlap={7:d} mininsert={8:d}",
             # ./blastn -db DBDIR/NAME -query INFILE -out OUTFILE -outfmt 6 -evalue 1e-10 -num_threads INT OTHER PARS
             "blastn": " -db {0:s} -query {1:s} -out {2:s} -outfmt {3:d} -evalue {4:s} -num_threads {5:d} {6:s}",
             # ./blastp -db DBDIR/NAME -query INFILE -out OUTFILE -outfmt 6 -evalue 1e-10 -num_threads INT OTHER PARS
@@ -417,21 +436,27 @@ class executor(object):
             "cap3": " {0:s} -p 85 -f 1500 -e 500 -z 1 -o 30 -s 251",
             # ./cd-hit-est  -i INFILE -o OUTFILE -c IDENTITY -l MINLEN -M MEMORY -T THREADS -r 1 -d 30
             "cd-hit-est": " -i {0:s} -o {1:s} -c {2:0.2f} -l {3:d} -M {4:d} -T {5:d} -r 1 -d 30",
+            # ./cutadapt -f fastq -e 0.15 -O 4 -n 5 OPTIONS OUTPATH INPATH
+            "cutadapt": " -f fastq -e 0.15 -O 4 -n 5 {0:s} {1:s} {2:s}",
             # ./fastqc -t THREADS --quiet -o OUTPATH --extract -f FASTQ INPATH
             "fastqc": " -t {0:d} --quiet -o {1:s} --extract -f {2:s} {3:s}",
+            # ./makeblastdb -in INFILE -out DBDIR/NAME -dbtype TYPE
+            "makeblastdb": " -in {0:s} -out {1:s} -dbtype {2:s}",
             # ./multiqc -q -i TITLE -b EXONtools -o OUTPUT
             "multiqc": " -q -i EXONtools -b '{0:s}' -o {1:s} --export --module {2:s} {3:s}",
             # ./samtools CMD OPTIONS
             "samtools": " {0:s} {1:s}",
             # ./spades.py --disable-gzip-output --only-assembler -k -cov-cutoff -o -t -m -1 -2 -s
-            "spades": " --disable-gzip-output {0:s} -o {1:s} -t {2:d} -m {3:d} {4:s}",
+            "spades.py": " --disable-gzip-output {0:s} -o {1:s} -t {2:d} -m {3:d} {4:s}",
             # ./tblastn -db DBDIR/NAME -query INFILE -out OUTFILE -outfmt 6 -evalue 1e-10 -num_threads INT OTHER PARS
             "tblastn": " -db {0:s} -query {1:s} -out {2:s} -outfmt {3:d} -evalue {4:s} -num_threads {5:d} {6:s}",            # ./tblastx -db DBDIR/NAME -query INFILE -out OUTFILE -outfmt 6 -evalue 1e-10 -num_threads INT OTHER PARS
             "tblastx": " -db {0:s} -query {1:s} -out {2:s} -outfmt {3:d} -evalue {4:s} -num_threads {5:d} {6:s}",
-            # ./Trinity --seqType fq --max_memory --CPU --no_normalize_reads --left --right --output
-            "trinity": " --full_cleanup --seqType fq --max_memory {0:d}G {1:s} --CPU {2:d} {3:s} --output {4:s}",
             # ./transabyss --se --pe --name --outdir --kmer --cov --seros 0 --eros --pairs --threads --mpi --noref
-            "transabyss": " {0:s} --name {1:s} --outdir {2:s} --seros 0 {3:s} --threads {4:d} --mpi {5:d} --noref"
+            "transabyss": " {0:s} --name {1:s} --outdir {2:s} --seros 0 {3:s} --threads {4:d} --mpi {5:d} --noref",
+            # " " + self.program_paths["trimmomatic"] + " %s -threads %d -phred%s -trimlog %s %s %s"
+            "trimmomatic": "java -jar",
+            # ./Trinity --seqType fq --max_memory --CPU --no_normalize_reads --left --right --output
+            "trinity": " --full_cleanup --seqType fq --max_memory {0:d}G {1:s} --CPU {2:d} {3:s} --output {4:s}"
         }
 
         for prog in executor.program_paths:

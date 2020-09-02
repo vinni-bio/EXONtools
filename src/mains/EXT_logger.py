@@ -1,11 +1,11 @@
 # ENCODING: UTF-8
 
-# This file was created by Kirill Vinnikov on August 10, 2018
-# Copyright 2018 by Kirill Vinnikov. All rights reserved.
+# This file was created by Kirill Vinnikov on August 10, 2020
+# Copyright 2020 by Kirill Vinnikov. All rights reserved.
 
 # This code is a part of the EXONtools distribution and governed
 # by its license. Please see the LICENSE.txt file that should
-# have been included in the root folder of the EXONtools package.
+# have been included in the root direcotry of the EXONtools package.
 
 import logging
 import logging.config
@@ -124,7 +124,7 @@ def log2json(level="INFO", logmode=False, quietmode=False, disable_existing_logg
 
 
 def args2json(args):
-    jsonpath = os.path.join(os.path.split(sys.argv[0])[0], "jsons", "lastcompars.json")
+    jsonpath = os.path.join(os.path.split(os.path.realpath(sys.argv[0]))[0], "jsons", "lastcompars.json")
 
     arg_dict = {x: args.__dict__[x] for x in args.__dict__ if x != "command"}
 

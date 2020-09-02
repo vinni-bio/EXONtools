@@ -1,12 +1,12 @@
 # ENCODING: UTF-8
 
 
-# This file was created by Kirill Vinnikov on August 10, 2019
-# Copyright 2019 by Kirill Vinnikov. All rights reserved.
+# This file was created by Kirill Vinnikov on August 10, 2020
+# Copyright 2020 by Kirill Vinnikov. All rights reserved.
 
 # This code is a part of the EXONtools distribution and governed
 # by its license. Please see the LICENSE.txt file that should
-# have been included in the root folder of the EXONtools package.
+# have been included in the root directory of the EXONtools package.
 
 from __future__ import print_function, division
 import os
@@ -17,9 +17,10 @@ import pdb
 import gzip
 import itertools
 import time
+import sys
 
 from mains.EXT_prog import EXTprogram
-from mains.EXT_IO import getinput, output, makenewdir
+from mains.EXT_IO import getinput, parseinput, output, makenewdir
 from mains.EXT_executor import executor
 from mains.EXT_errors import EXONtoolsError
 from utils.revcomp import DNArevcomp
@@ -36,9 +37,9 @@ class demultiplexer(EXTprogram):
 
     def execute_program(self):
         args = self.args
-        self.demultiplex_reads(args.inpath, args.outdir, args.barcode, args.inseqsearch, args.start, args.trim, args.pattern, args.tolerance, args.gzoutput, args.rqc)
+        self.demultiplex_reads(args.forward, args.reverse, args.outdir, args.barcode, args.inseqsearch, args.start, args.trim, args.pattern, args.tolerance, args.gzoutput, args.rqc)
 
-    def demultiplex_reads(self, inpath, outdir, barcode, inseqsearch, start, trim, pattern, tolerance, gzoutput, rqc):
+    def demultiplex_reads(self, forward, reverse, outdir, barcode, inseqsearch, start, trim, pattern, tolerance, gzoutput, rqc):
 
         if demultiplexer.debug:
             pdb.set_trace()
@@ -72,6 +73,9 @@ class demultiplexer(EXTprogram):
                     logging.error("Dual indexes cannot be used for inread search")
                     logging.error("Please correct your input command and try again")
                     raise EXONtoolsError("Demultiplexer command line error")
+            else:
+                if start > 1:
+                    logging.warning("Start position cannot be changed if barcodes are not in sequence")
         elif pattern:
             logging.info("Library name pattern option was enabled")
             if pattern == "default":
@@ -85,17 +89,25 @@ class demultiplexer(EXTprogram):
             raise EXONtoolsError("Demultiplexer command line error")
 
         # GET READ INPUT FILE
-        logging.info("The following file with sequencing reads will be demultiplexed")
+        
+        
         getinput.format(['.fq', '.fastq', '.fastq.gz', '.fq.gz'])
-        FileList = getinput(inpath).files
-        if len(FileList) > 1:
-            logging.error("Demultiplexer program can work with single FASTQ files")
-            raise EXONtoolsError("I/O error")
-        elif len(FileList) == 0:
-            logging.error("No files were found to demultiplex")
-            raise EXONtoolsError("I/O error")
+        
+        paired, unpaired = parseinput(inpath = None, forward=forward, reverse=reverse)
+
+        if unpaired:
+            FileList=list(unpaired.values())[0]
+            logging.info("The following file with unpaired sequencing reads will be demultiplexed")
+            logging.info(FileList[0])
+        elif paired:
+            FileList=list(paired.values())[0]
+            logging.info("The following files with paired sequencing reads will be demultiplexed")
+            logging.info(FileList[0])
+            logging.info(FileList[1])
         else:
-            inpathfile = FileList[0]
+            logging.error("Demultiplexer program can only work with single FASTQ files (forward & reverse)")
+            raise EXONtoolsError("I/O error")
+
 
         # MAKE OUTPUT DIRECTORY
         output(outdir)
@@ -112,17 +124,28 @@ class demultiplexer(EXTprogram):
             pdb.set_trace()
 
         logging.info("Counting the total number of reads")
-        totalreads = count_reads(inpathfile)
-        logging.info("{0:d} reads are found in the input file".format(totalreads))
+        totalreads1 = count_reads(FileList[0])
+        if reverse:
+            totalreads2 = count_reads(FileList[1])
+            if totalreads1 != totalreads2:
+                logging.error("Number of reads in paired do not match")
+                raise EXONtoolsError
+            logging.info("{0:d} paired-end reads are found within input files".format(totalreads1))
+        else:
+            logging.info("{0:d} single-end reads are found within input file".format(totalreads1))
+
 
         if demultiplexer.debug:
             pdb.set_trace()
 
         if pattern:
-            stats_collector = demux(inpathfile, output.path, pattern, demultiplexer.suffix, gzoutput, totalreads)
+            stats_collector = findpatterns(FileList, output.path, pattern, demultiplexer.suffix, gzoutput, totalreads1)
 
-        if barcode:
-            stats_collector = debarcode(barcodes, inpathfile, output.path, demultiplexer.suffix, tolerance, inseqsearch, trim, start, gzoutput, totalreads)
+        if barcode and not inseqsearch:
+            stats_collector = findindex(barcodes, FileList, output.path, demultiplexer.suffix, tolerance, gzoutput, totalreads1)
+
+        if  barcode and inseqsearch:
+            stats_collector = findbarcode(barcodes, FileList, output.path, demultiplexer.suffix, tolerance, inseqsearch, trim, start, gzoutput, totalreads1)
 
         if demultiplexer.debug:
             pdb.set_trace()
@@ -131,7 +154,7 @@ class demultiplexer(EXTprogram):
         if demultiplexer.stats and not demultiplexer.dryrun:
             statdir = makenewdir(name=os.path.join(output.path, "STATS"), fullname="STATS")
             logging.info("Demultiplexing stats will be saved to 'STATS/demux_stats.csv'")
-            header = ["No", "Library", "NRreads"]
+            header = ["No", "Library", "NReads"]
             undefined_count = stats_collector.pop('undefined_count')
             with open(os.path.join(statdir.path, "demux_stats.csv"), 'w') as statfile:
                 csv_writer = csv.writer(statfile)
@@ -156,7 +179,11 @@ class demultiplexer(EXTprogram):
 
 
 def get_barcodes(barcpath):
-    """This function parses the file with barcodes and returns the dictionary with barcodes as keys"""
+    """
+    This function parses input file with barcodes 
+    and returns the dictionary with barcodes as keys
+    and libnames as values
+    """
 
     logging.debug("Reading library barcodes")
     barcpath = os.path.abspath(barcpath)
@@ -187,126 +214,353 @@ def get_barcodes(barcpath):
         logging.error("No barcodes were found in the barcode file")
         raise EXONtoolsError("Demultiplexer barcode file input error")
     logging.debug("Read library indexes: OK")
+    
     return barcodes
 
 
-def debarcode(barcodes, filepath, outpath, suffix, tolerance, inseq, trim, start, gzout, total):
-    """Demultiplex reads by barcodes sequences"""
+
+def findindex(barcodes, filepath, outpath, suffix, tolerance, gzout, total):
+    """
+    Search barcodes in read names
+    Can work with dual indexes
+    """
+
+    logging.info("Demultiplexing reads by index search within read name")
+
+    if len(filepath) == 2:
+        suffix1 = '_R1' + suffix
+        suffix2 = '_R2' + suffix
+    else:
+        suffix1 = suffix
+
 
     total_defined = 0
     undefined_count = 0
+    barc_stats = {x: 0 for x in list(barcodes.values())}                 # list all libraries and add 0 counts
 
-    barc_stats = {x: 0 for x in list(barcodes.values())}
-
-    if inseq:
-        barcrange = (min(map(len, list(barcodes.keys()))), max(map(len, list(barcodes.keys()))))
-
-        if len(barcrange) != len(set(barcrange)):
-            barcrange = barcrange[0]
-
-        infileseq = SeqIO(filepath, fileformat="FASTQ")
-
-        for read in infileseq.read():
-            barc_list = []
-            selected_barc = {}
-
-            for i in range(barcrange[0], barcrange[1] + 1):
-                barc = read.seq[start - 1:start - 1 + i]
-                result = tolerate_barcode(barc, tolerance)
-                barc_list = barc_list + result
-
-                barc = read.seq[len(read.seq) - start - 1 - i:len(read.seq) - start - 1]
-                result = tolerate_barcode(barc, tolerance)
-                barc_list = barc_list + result
-
-            for barc in barc_list:
-                if barc in barcodes:
-                    selected_barc[barc] = barcodes[barc]            # checks corresponding barcodes
-
-            # SAVES READS WITH A SINGLE MATCH
-            if len(selected_barc) == 1:
-                libname = list(selected_barc.values())[0]
-                barcseq = list(selected_barc.keys())[0]
-                barc_stats[libname] += 1
-                total_defined += 1
-                file_name = os.path.join(outpath, libname + suffix + ".fq")
-                readseq = read.seq[len(barcseq) + trim:]
-                qualseq = read.qual[len(barcseq) + trim:]
-                if read.extra.endswith(':'):
-                    extrapart = read.extra + barcseq
-                else:
-                    extrapart = read.extra
-                if gzout:
-                    with gzip.open(file_name + ".gz", "at") as outfile:
-                        outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, extrapart, readseq, read.info, qualseq))
-                else:
-                    with open(file_name, "a") as outfile:
-                        outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, extrapart, readseq, read.info, qualseq))
-
-            # SAVES UNMATCHED READS or READS WITH MULTIPLE MATCHES
-            else:
-                file_name = os.path.join(outpath, "Undefined_reads" + suffix + ".fq")
-                undefined_count += 1
-                if gzout:
-                    with gzip.open(file_name + ".gz", "at") as outfile:
-                        outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, read.extra, read.seq, read.info, read.qual))
-                else:
-                    with open(file_name, "a") as outfile:
-                        outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, read.extra, read.seq, read.info, read.qual))
-
-            printProgressBar(infileseq.total, total, prefix="", suffix="", decimals=1, length=100, fill='█', printEnd="\r")
+    infileseq1 = SeqIO(filepath[0], fileformat="FASTQ")                  # open file with forward reads 
+    gen1 = infileseq1.read()
+    read1 = next(gen1)   
+    if len(filepath) > 1:                                                # open file with reverse reads
+        infileseq2 = SeqIO(filepath[1], fileformat="FASTQ")
+        gen2 = infileseq2.read()
+        read2 = next(gen2)
     else:
-        infileseq = SeqIO(filepath, fileformat="FASTQ")
+        infileseq2 = None
 
-        for read in infileseq.read():
-            if read.barcode:
-                selected_barc = {}                                      # initiates the dict of selected barcodes
-                barc_list = tolerate_barcode(read.barcode, tolerance)        # makes the list with barcode variations
+    while(infileseq1.total <= total):
 
+        if read1.barcode:
+            selected_barc = []
+
+            if set(list(read1.barcode)) - {"A","T","G","C","+"}:            # solve Ns in barcodes
+                barc_list =  replaceN(read1.barcode)
                 for barc in barc_list:
                     if barc in barcodes:
-                        selected_barc[barc] = barcodes[barc]            # checks corresponding barcodes
+                        selected_barc.append(barcodes[barc])            # find corresponding barcodes
 
-                # SAVES READS WITH A SINGLE MATCH
-                if len(selected_barc) == 1:
-                    libname = list(selected_barc.values())[0]
-                    barc_stats[libname] += 1
-                    total_defined += 1
-                    file_name = os.path.join(outpath, libname + suffix + ".fq")
-                    if gzout:
-                        with gzip.open(file_name + ".gz", "at") as outfile:
-                            outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, read.extra, read.seq, read.info, read.qual))
-                    else:
-                        with open(file_name, "a") as outfile:
-                            outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, read.extra, read.seq, read.info, read.qual))
-
-                # SAVES UNMATCHED READS or READS WITH MULTIPLE MATCHES
-                else:
-                    file_name = os.path.join(outpath, "Undefined_reads" + suffix + ".fq")
-                    undefined_count += 1
-                    if gzout:
-                        with gzip.open(file_name + ".gz", "at") as outfile:
-                            outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, read.extra, read.seq, read.info, read.qual))
-                    else:
-                        with open(file_name, "a") as outfile:
-                            outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, read.extra, read.seq, read.info, read.qual))
             else:
-                file_name = os.path.join(outpath, "Empty_barcodes" + suffix + ".fq")
-                undefined_count += 1
-                if gzout:
-                    with gzip.open(file_name + ".gz", "at") as outfile:
-                        outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, read.extra, read.seq, read.info, read.qual))
-                else:
-                    with open(file_name, "a") as outfile:
-                        outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, read.extra, read.seq, read.info, read.qual))
-        printProgressBar(infileseq.total, total, prefix="", suffix="", decimals=1, length=100, fill='█', printEnd="\r")
+                for tolr in range(tolerance+1):
+                    barc_list = tolerate_barcode(read1.barcode, tolr)        # alternatively tolerate barcodes
+                    for barc in barc_list:
+                        if barc in barcodes:
+                            selected_barc.append(barcodes[barc])            # find corresponding barcodes
+                    if selected_barc:
+                        break
 
-    logging.info("Read demultiplexing is compete: ")
+            # SAVE READS WITH A SINGLE MATCH
+            if len(selected_barc) == 1:
+
+                barc_stats[selected_barc[0]] += 1
+                total_defined += 1
+                file_name1 = os.path.join(outpath, selected_barc[0] +suffix1 + ".fq")
+
+                if gzout:
+                    with gzip.open(file_name1 + ".gz", "at") as outfile1:
+                        outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+                else:
+                    with open(file_name1, "a") as outfile1:
+                        outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+
+                if infileseq2:
+                    file_name2 = os.path.join(outpath, selected_barc[0] + suffix2 + ".fq")
+                    if gzout:
+                        with gzip.open(file_name2 + ".gz", "at") as outfile2:
+                            outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
+                    else:
+                        with open(file_name2, "a") as outfile2:
+                            outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
+
+
+            # TRY TO SOLVE BARCODE BOTH WITH N and TOLERANCE
+            elif len(selected_barc) == 0 and read1.barcode.count('N') == 1:
+
+                for barc in barc_list:
+                    for tolr in range(tolerance+1):
+                        new_barc_list = tolerate_barcode(barc, tolr)
+                        for barc in new_barc_list:
+                            if barc in barcodes:
+                                selected_barc.append(barcodes[barc])            # find corresponding barcodes
+                        if selected_barc:
+                            break
+                
+                if len(selected_barc) == 1:
+
+                    barc_stats[selected_barc[0]] += 1
+                    total_defined += 1
+                    file_name1 = os.path.join(outpath, selected_barc[0] +suffix1 + ".fq")
+
+                    if gzout:
+                        with gzip.open(file_name1 + ".gz", "at") as outfile1:
+                            outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+                    else:
+                        with open(file_name1, "a") as outfile1:
+                            outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+
+                    if infileseq2:
+                        file_name2 = os.path.join(outpath, selected_barc[0] + suffix2 + ".fq")
+                        if gzout:
+                            with gzip.open(file_name2 + ".gz", "at") as outfile2:
+                                outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
+                        else:
+                            with open(file_name2, "a") as outfile2:
+                                outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))                
+
+            # TRY TO SOLVE BARCODE WITH A SECOND READ
+            elif infileseq2:
+                selected_barc = []
+
+                if set(list(read2.barcode)) - {"A","T","G","C","+"}:                    # solve Ns in barcodes
+                    barc_list =  replaceN(read2.barcode)
+                    for barc in barc_list:
+                        if barc in barcodes:
+                            selected_barc.append(barcodes[barc])                    # find corresponding barcodes
+
+                else:
+                    for tolr in range(tolerance+1):
+                        barc_list = tolerate_barcode(read2.barcode, tolr)      # alternatively tolerate barcodes
+                        for barc in barc_list:
+                            if barc in barcodes:
+                                selected_barc.append(barcodes[barc])                # find corresponding barcodes
+                        if selected_barc:
+                            break
+
+                if len(selected_barc) == 1:
+
+                    barc_stats[selected_barc[0]] += 1
+                    total_defined += 1
+                    file_name1 = os.path.join(outpath, selected_barc[0] + suffix1 + ".fq")
+                    file_name2 = os.path.join(outpath, selected_barc[0] + suffix2 + ".fq")
+
+                    if gzout:
+                        with gzip.open(file_name1 + ".gz", "at") as outfile1, gzip.open(file_name2 + ".gz", "at") as outfile2:
+                            outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+                            outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
+                    else:
+                        with open(file_name1, "a") as outfile1, open(file_name2, "a") as outfile2:
+                            outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+                            outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
+                else:
+                    file_name1 = os.path.join(outpath, "Undefined_reads"+ suffix1 + ".fq")
+                    file_name2 = os.path.join(outpath, "Undefined_reads"+ suffix2 + ".fq")
+                    undefined_count += 1
+
+                    if gzout:
+                        with gzip.open(file_name1 + ".gz", "at") as outfile1, gzip.open(file_name2 + ".gz", "at") as outfile2:
+                            outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+                            outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
+                    else:
+                        with open(file_name1, "a") as outfile1, open(file_name2, "a") as outfile2:
+                            outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+                            outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
+
+            # SAVES UNMATCHED READS or READS WITH MULTIPLE MATCHES
+            else:                
+                file_name1 = os.path.join(outpath, "Undefined_reads_R1"+ suffix + ".fq")
+                undefined_count += 1
+
+                if gzout:
+                    with gzip.open(file_name1 + ".gz", "at") as outfile1:
+                        outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+                else:
+                    with open(file_name1, "a") as outfile1:
+                        outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+        else:
+            if infileseq2:
+                file_name1 = os.path.join(outpath, "Empty_index"+ suffix1 + ".fq")
+                file_name2 = os.path.join(outpath, "Empty_index"+ suffix2 + ".fq")
+                undefined_count += 1
+
+                if gzout:
+                    with gzip.open(file_name1 + ".gz", "at") as outfile1, gzip.open(file_name2 + ".gz", "at") as outfile2:
+                        outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+                        outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
+                else:
+                    with open(file_name1, "a") as outfile1, open(file_name2, "a") as outfile2:
+                        outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+                        outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
+
+            else:
+                file_name1 = os.path.join(outpath, "Empty_index"+ suffix1 + ".fq")
+                undefined_count += 1
+
+                if gzout:
+                    with gzip.open(file_name1 + ".gz", "at") as outfile1:
+                        outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+                else:
+                    with open(file_name1, "a") as outfile1:
+                        outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))                
+
+        printProgressBar(infileseq1.total, total, prefix="", suffix="", decimals=1, length=100, fill='█', printEnd="\r")
+        try:
+            read1 = next(gen1)
+            if infileseq2:
+                read2 = next(gen2)
+        except StopIteration:
+            break
+
+
+    logging.info("Read demultiplexing is complete: ")
     time.sleep(0.5)
 
     barc_stats["undefined_count"] = undefined_count
-    logging.info("Total {0} reads were demultiplexed in {1}".format(total_defined, os.path.basename(filepath)))
-    logging.info("Total {0} reads were not identified in {1}".format(undefined_count, os.path.basename(filepath)))
+    logging.info("Total {0:d} reads were demultiplexed from total {1:d} reads ({2:0.2f} %) ".format(total_defined,total,total_defined/total*100))
+
+    return barc_stats
+
+
+
+
+def findbarcode(barcodes, filepath, outpath, suffix, tolerance, inseq, trim, start, gzout, total):
+    """
+    Demultiplex reads by barcodes inserted within sequences
+    Cannot work with dual indexes
+    """
+    logging.info("Demultiplexing reads by barcode search within sequence")
+
+    if len(filepath) == 2:
+        suffix1 = '_R1' + suffix
+        suffix2 = '_R2' + suffix
+    else:
+        suffix1 = suffix
+
+    total_defined = 0
+    undefined_count = 0
+    barc_stats = {x: 0 for x in list(barcodes.values())}
+    barcrange = (min(map(len, list(barcodes.keys()))), max(map(len, list(barcodes.keys()))))
+
+
+    infileseq1 = SeqIO(filepath[0], fileformat="FASTQ")                  # open file with forward reads 
+    gen1 = infileseq1.read()
+    read1 = next(gen1)   
+    if len(filepath) > 1:                                                # open file with reverse reads
+        infileseq2 = SeqIO(filepath[1], fileformat="FASTQ")
+        gen2 = infileseq2.read()
+        read2 = next(gen2)
+    else:
+        infileseq2 = None
+
+    while(infileseq1.total <= total):
+
+        selected_barc = []
+
+        for tolr in range(tolerance+1):
+            barc_list = []
+            for i in range(barcrange[0], barcrange[1] + 1):
+                barc = read1.seq[start - 1:start - 1 + i]
+
+                if barc.count('N') == 1:
+                    newbarks = replaceN(barc)
+                    for bb in newbarks:
+                        barc_list = barc_list + tolerate_barcode(bb, tolr)
+                else:
+                    barc_list = barc_list + tolerate_barcode(barc, tolr)
+
+
+                # barc = read.seq[len(read.seq) - start - 1 - i:len(read.seq) - start - 1]
+                # result = tolerate_barcode(barc, tolr)
+                # barc_list = barc_list + result
+
+            for barc in barc_list:
+                if barc in barcodes:
+                    selected_barc.append((barcodes[barc],barc))            # find corresponding barcodes
+
+            if selected_barc:
+                break
+
+
+        if len(selected_barc) == 1:
+            libname = selected_barc[0][0]
+            barcseq = selected_barc[0][1]
+            readseq = read1.seq[len(barcseq) + trim:]
+            qualseq = read1.qual[len(barcseq) + trim:]
+            if read1.extra.endswith(':'):
+                extrapart = read1.extra + barcseq
+            else:
+                extrapart = read1.extra
+
+
+            barc_stats[libname] += 1
+            total_defined += 1
+            file_name1 = os.path.join(outpath, libname +suffix1 + ".fq")
+
+            if gzout:
+                with gzip.open(file_name1 + ".gz", "at") as outfile1:
+                    outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, extrapart, readseq, read1.info, qualseq))
+            else:
+                with open(file_name1, "a") as outfile1:
+                    outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, extrapart, readseq, read1.info, qualseq))
+
+            if infileseq2:
+                file_name2 = os.path.join(outpath, libname + suffix2 + ".fq")
+                readseq = read2.seq[len(barcseq) + trim:]
+                qualseq = read2.qual[len(barcseq) + trim:]
+                if read2.extra.endswith(':'):
+                    extrapart = read2.extra + barcseq
+                else:
+                    extrapart = read2.extra
+                if gzout:
+                    with gzip.open(file_name2 + ".gz", "at") as outfile2:
+                        outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, extrapart, readseq, read2.info, qualseq))
+                else:
+                    with open(file_name2, "a") as outfile2:
+                        outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, extrapart, readseq, read2.info, qualseq))
+
+        else:
+            undefined_count += 1
+            file_name1 = os.path.join(outpath, "Undefined_reads"+ suffix1 + ".fq")
+
+            if gzout:
+                with gzip.open(file_name1 + ".gz", "at") as outfile1:
+                    outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+            else:
+                with open(file_name1, "a") as outfile1:
+                    outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+
+            if infileseq2:
+                file_name2 = os.path.join(outpath, "Undefined_reads"+ suffix2 + ".fq")
+                if gzout:
+                    with gzip.open(file_name2 + ".gz", "at") as outfile2:
+                        outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
+                else:
+                    with open(file_name2, "a") as outfile2:
+                        outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
+
+        printProgressBar(infileseq1.total, total, prefix="", suffix="", decimals=1, length=100, fill='█', printEnd="\r")
+
+        try:
+            read1 = next(gen1)
+            if infileseq2:
+                read2 = next(gen2)
+        except StopIteration:
+            break
+
+
+    logging.info("Read demultiplexing is complete: ")
+    time.sleep(0.5)
+
+    barc_stats["undefined_count"] = undefined_count
+    logging.info("Total {0:d} reads were demultiplexed from total {1:d} reads ({2:0.2f} %) ".format(total_defined,total,total_defined/total*100))
 
     return barc_stats
 
@@ -358,34 +612,55 @@ def replaceN(barcode):
     nuc_list = ["A", "T", "C", "G"]                     # normal bases
     for seq in dat:                                     # check each barcode
         new_seqs = []                                   # empty list for barcode variations
-        for nuc in list(seq):                           # check strange
+        final_seqs = []
+        for i,nuc in enumerate(seq):                    # check strange            
             if nuc not in nuc_list:
                 for k in nuc_list:
-                    newseq = re.sub(nuc, k, seq)
-                    if newseq not in new_seqs:
-                        new_seqs.append(newseq)
-        if new_seqs:                                     # append new seqs if found
-            barcode_list.append(new_seqs)
+                    new_seqs.append(seq[:i]+k+seq[i+1:])
+        for newbarc in new_seqs:
+            if 'N' in newbarc:
+                final_seqs = final_seqs + replaceN(newbarc)
+            else:
+                final_seqs.append(newbarc)
+        if final_seqs:                                  # append new seqs if found
+            final_seqs = list(set(final_seqs))
+            barcode_list.append(final_seqs)
         else:
             barcode_list.append([seq])                   # append old seq if OK
+        
     final_list = list(itertools.product(*barcode_list))  # make all combination pairs
     result = ["+".join(x) for x in final_list]           # produce result with joint barcodes
     return result
 
 
-def demux(filepath, outpath, pattern, suffix, gzout, total):
+def findpatterns(filepath, outpath, pattern, suffix, gzout, total):
     """Demultiplex reads using GREP pattern in read name identifier"""
 
-    logging.info("Running the demultiplexing analysis using provided read name pattern")
+    logging.info("Dmultiplexing reads by pattern search within read names")
+
+    if len(filepath) == 2:
+        suffix1 = '_R1' + suffix
+        suffix2 = '_R2' + suffix
+    else:
+        suffix1 = suffix
 
     total_defined = 0
     undefined_count = 0
     demux_stats = {}
 
-    infileseq = SeqIO(filepath, fileformat="FASTQ")
+    infileseq1 = SeqIO(filepath[0], fileformat="FASTQ")                  # open file with forward reads 
+    gen1 = infileseq1.read()
+    read1 = next(gen1)   
+    if len(filepath) > 1:                                                # open file with reverse reads
+        infileseq2 = SeqIO(filepath[1], fileformat="FASTQ")
+        gen2 = infileseq2.read()
+        read2 = next(gen2)
+    else:
+        infileseq2 = None
 
-    for read in infileseq.read():
-        libname = check_pattern(pattern, "@" + read.name + " " + read.extra)
+    while(infileseq1.total <= total):
+
+        libname = check_pattern(pattern, "@" + read1.name + " " + read1.extra)
 
         if libname:
             total_defined += 1
@@ -395,30 +670,56 @@ def demux(filepath, outpath, pattern, suffix, gzout, total):
                 demux_stats[libname] = 1
 
             if gzout:
-                with gzip.open(os.path.join(outpath, libname + suffix + ".fq.gz"), "at") as outfile:
-                    outfile.write("@{0}\n{1}\n+{2}\n{3}\n".format(read.name + " " + read.extra.strip(), read.seq, read.info, read.qual))
+                with gzip.open(os.path.join(outpath, libname + suffix1 + ".fq.gz"), "at") as outfile1:
+                    outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
             else:
-                with open(os.path.join(outpath, libname + suffix + ".fq"), "a") as outfile:
-                    outfile.write("@{0}\n{1}\n+{2}\n{3}\n".format(read.name + " " + read.extra.strip(), read.seq, read.info, read.qual))
+                with open(os.path.join(outpath, libname + suffix1 + ".fq"), "a") as outfile1:
+                    outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
+
+
+            if infileseq2:
+                if gzout:
+                    with gzip.open(os.path.join(outpath, libname + suffix2 + ".fq") + ".gz", "at") as outfile2:
+                        outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
+                else:
+                    with open(os.path.join(outpath, libname + suffix2 + ".fq"), "a") as outfile2:
+                        outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
         else:
             undefined_count += 1
             if gzout:
-                with gzip.open(os.path.join(outpath, "Undefined_reads" + suffix + ".fq.gz"), "at") as outfile:
-                    outfile.write("@{0}\n{1}\n+{2}\n{3}\n".format(read.name + " " + read.extra.strip(), read.seq, read.info, read.qual))
+                with gzip.open(os.path.join(outpath, "Undefined_reads" + suffix1 + ".fq.gz"), "at") as outfile1:
+                    outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
             else:
-                with open(os.path.join(outpath, "Undefined_reads" + suffix + ".fq"), "a") as outfile:
-                    outfile.write("@{0}\n{1}\n+{2}\n{3}\n".format(read.name + " " + read.extra.strip(), read.seq, read.info, read.qual))
+                with open(os.path.join(outpath, "Undefined_reads" + suffix1 + ".fq"), "a") as outfile:
+                    outfile1.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read1.name, read1.extra, read1.seq, read1.info, read1.qual))
 
-        printProgressBar(infileseq.total, total, prefix="", suffix="", decimals=1, length=100, fill='█', printEnd="\r")
+            if infileseq2:
+                if gzout:
+                    with gzip.open(os.path.join(outpath, "Undefined_reads"+ suffix2 + ".fq") + ".gz", "at") as outfile2:
+                        outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
+                else:
+                    with open(os.path.join(outpath, "Undefined_reads"+ suffix2 + ".fq"), "a") as outfile2:
+                        outfile2.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read2.name, read2.extra, read2.seq, read2.info, read2.qual))
 
-    logging.info("Read demultiplexing is compete: ")
+
+        printProgressBar(infileseq1.total, total, prefix="", suffix="", decimals=1, length=100, fill='█', printEnd="\r")
+
+        try:
+            read1 = next(gen1)
+            if infileseq2:
+                read2 = next(gen2)
+        except StopIteration:
+            break
+
+
+    logging.info("Read demultiplexing is complete: ")
     time.sleep(0.5)
 
     demux_stats["undefined_count"] = undefined_count
+    logging.info("Total {0:d} reads were demultiplexed from total {1:d} reads ({2:0.2f} %) ".format(total_defined,total,total_defined/total*100))
 
-    logging.info("Total {0} reads were demultiplexed in {1}".format(total_defined, os.path.basename(filepath)))
-    logging.info("Total {0} reads were not identified in {1}".format(undefined_count, os.path.basename(filepath)))
     return demux_stats
+
 
 
 def check_pattern(pattern, line):
@@ -439,5 +740,9 @@ def check_pattern(pattern, line):
 
 def count_reads(inpath):
     infileseq = SeqIO(inpath, fileformat="FASTQ")
-    infileseq.totalcount()
-    return infileseq.total
+    infileseq.totalcount(lines=True)
+    if infileseq.total % 4 != 0:
+        logging.error("FASTQ format error. Please check your input file.")
+        raise EXONtoolsError("Wrong fastq format")
+
+    return infileseq.total//4

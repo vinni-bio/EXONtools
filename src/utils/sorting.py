@@ -5,7 +5,7 @@
 
 # This code is a part of the EXONtools distribution and governed
 # by its license. Please see the LICENSE.txt file that should
-# have been included in the root dircectory of the EXONtools package.
+# have been included in the root directory of the EXONtools package.
 
 from re import split
 

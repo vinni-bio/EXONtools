@@ -9,12 +9,12 @@
 # have been included in the root folder of the EXONtools package.
 
 from mains.EXT_com import EXTcommand
-from progs.formatter import seqformatter
+from progs.formatter import readformatter
 
 
 class command(EXTcommand):
     """This command takes raw reads and verifies their names and structure"""
 
-    supported_programs = [seqformatter]
-    default_program = seqformatter
+    supported_programs = [readformatter]
+    default_program = readformatter
     command_name = "format_reads"

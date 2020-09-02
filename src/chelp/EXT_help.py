@@ -38,7 +38,7 @@ description = """
     split_stacks            - split stacks by exon/intron boundaries(Step E9)
     stack_exons             - cluster exons using their annotations (Step E6)
 
-For getting the detailed information about each command, provide the help menu option after command name:
+For getting detailed information about each command, please provide help menu option after command name:
 ./EXONtools.py COMMAND --help
 
 Please check that the names of your sequence files follow the EXONtools rules of library name format:

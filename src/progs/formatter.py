@@ -24,39 +24,39 @@ from mains.EXT_parallel import hard_worker, create_pool, close_pool, run_instanc
 from mains.EXT_errors import EXONtoolsError
 from utils.sorting import natural_sort
 from utils.seqIO import SeqIO
-from utils.fastqc import fastqc_test
+from utils.rqc import rqc_test
 
 
-class seqformatter(EXTprogram):
+class readformatter(EXTprogram):
     """This program verifies names and structure of raw reads"""
 
-    name = "seqformatter"
+    name = "readformatter"
 
     def execute_program(self):
         args = self.args
-        self.format_seqs(args.inpath, args.forward, args.reverse, args.unpaired, args.outdir, args.gzoutput, args.rename, args.pattern, args.customgrep, args.skipcheck, args.fastqc)
+        self.format_seqs(args.inpath, args.forward, args.reverse, args.outdir, args.gzoutput, args.rename, args.pattern, args.customgrep, args.skipcheck, args.rqc)
 
-    def format_seqs(self, inpath, forward, reverse, unpaired_in, outdir, gzoutput, rename, pattern, customgrep, skipcheck, fastqc):
+    def format_seqs(self, inpath, forward, reverse, outdir, gzoutput, rename, pattern, customgrep, skipcheck, rqc):
 
-        if seqformatter.debug:
+        if readformatter.debug:
             pdb.set_trace()
 
         # SET DRY RUN AND DEBUGGING MODES FOR SUBCLASSES
-        seqformatter.run_dry(SeqIO, getinput, output, makenewdir, executor)
-        seqformatter.set_debug(executor)
+        readformatter.run_dry(SeqIO, getinput, output, makenewdir, executor)
+        readformatter.set_debug(executor)
 
-        if fastqc:
-            executor.setconfig("fastqc")
+        if rqc:
+            executor.setconfig("fastqc", "multiqc")
 
         # SET DRY RUN AND DEBUGGING MODES FOR SUBCLASSES
-        seqformatter.run_dry(getinput, output, makenewdir, executor)
-        seqformatter.set_debug(executor)
+        readformatter.run_dry(getinput, output, makenewdir, executor)
+        readformatter.set_debug(executor)
 
-        if seqformatter.debug:
+        if readformatter.debug:
             pdb.set_trace()
 
-        if seqformatter.extra:
-            logging.warning("Extra string argument cannot be used in 'seqformatter' program and therefore will be ommited")
+        if readformatter.extra:
+            logging.warning("Extra string argument cannot be used in 'readformatter' program and therefore will be ommited")
 
         if skipcheck:
             logging.warning("Skipping FASTQ read identifier checkup... Only parsing output will be performed")
@@ -80,13 +80,6 @@ class seqformatter(EXTprogram):
         # GET READ INPUT FILES
         getinput.format(['.fq', '.fastq', '.fastq.gz', '.fq.gz'])
         paired, unpaired = parseinput(inpath, forward, reverse)
-        if unpaired_in and not inpath:
-            unpaired = {os.path.basename(unpaired_in).split("_")[0].split(".")[0] + "_unpaired": getinput(unpaired_in).files}
-        elif unpaired_in and inpath:
-            logging.error("Input arguments '-i' and '-U' cannot be used simultaneously")
-            raise EXONtoolsError("Input path error")
-        else:
-            pass
 
         # checks if reads should be renamed and informs user
         if rename:
@@ -103,12 +96,13 @@ class seqformatter(EXTprogram):
 
         logging.debug("Test and IO settings: OK")
 
-        if seqformatter.debug:
+        if readformatter.debug:
             pdb.set_trace()
 
         # Collects all tasks
         TASKS = []
         if rename:
+            logging.warning("Old and new read names will be saved to 'CATALOG' directory")
             datnames = makenewdir(name="CATALOG", fullname="CATALOG")
         else:
             datnames = None
@@ -121,7 +115,7 @@ class seqformatter(EXTprogram):
 
         logging.info("Running the FASTQ read checkup analysis for all files")
         if TASKS:
-            processes_requested = set_threads("FASTQ file formatter", len(TASKS), seqformatter.threads)
+            processes_requested = set_threads("FASTQ file formatter", len(TASKS), readformatter.threads)
             pool = create_pool(processes_requested)
             jobs = hard_worker(run_instance, TASKS, pool)
             close_pool(pool)
@@ -136,28 +130,31 @@ class seqformatter(EXTprogram):
             raise EXONtoolsError("Multiprocessing error in FASTQ file analysis")
         logging.debug("Checkup analysis succesfully finished: OK")
 
-        if seqformatter.debug:
+        if readformatter.debug:
             pdb.set_trace()
 
         # SAVES STATS TO *.CSV TABLE
-        if seqformatter.stats and not seqformatter.dryrun:
-            logging.info("Read stats will be saved to 'read_stats.csv'")
+        if readformatter.stats and not readformatter.dryrun:
+            statdir = makenewdir(name=os.path.join(output.path, "STATS"), fullname="STATS")
+            logging.info("Read stats will be saved to 'STATS/read_stats.csv'")
             header = ["No", "Library", "BARCODE", "#READS", "#FILTERED"]
-            with open(os.path.join(output.path, "read_stats.csv"), 'w') as statfile:
+            with open(os.path.join(statdir, "read_stats.csv"), 'w') as statfile:
                 csv_writer = csv.writer(statfile)
                 csv_writer.writerow(header)
                 for i, lib in enumerate(sorted(stats_collector.keys(), key=natural_sort)):
                     csv_writer.writerow([i + 1] + stats_collector[lib])
-            logging.debug("Preclean stats were successfully written to the file: OK")
+            logging.debug("Read stats were successfully written to the file: OK")
 
-            if seqformatter.debug:
+            if readformatter.debug:
                 pdb.set_trace()
 
-        # PERFORMS FASTQC TESTS
-        if fastqc and gzoutput and not seqformatter.dryrun:
-            fastqc_test(output.path, seqformatter.threads, extension="*.gz")
-        elif fastqc and not seqformatter.dryrun:
-            fastqc_test(output.path, seqformatter.threads)
+        # PERFORMS READ QUALITY TESTS
+        if rqc and not readformatter.stats:
+            statdir = makenewdir(name=os.path.join(output.path, "STATS"), fullname="STATS")
+        if rqc and gzoutput and not readformatter.dryrun:
+            rqc_test(output.path, statdir.path, readformatter.threads, extension="*.gz", comment="Read formatting analysis")
+        elif rqc and not readformatter.dryrun:
+            rqc_test(output.path, statdir.path, readformatter.threads, comment="Read formatting analysis")
         else:
             pass
 
@@ -165,12 +162,12 @@ class seqformatter(EXTprogram):
 def validate_reads(inpathR1, inpathR2, outdir, libname, pattern, datout, rename, gzout, skipcheck):
     """Perform all FASTQ checkups and save the output"""
 
-    if seqformatter.dryrun:
+    if readformatter.dryrun:
         def write_seq_name(ffile, lline="", nname="", ssuffix=0, ccount=0):
             pass
 
     elif rename:
-        datpath = os.path.join(datout.path, libname + seqformatter.suffix + ".dat")
+        datpath = os.path.join(datout.path, libname + readformatter.suffix + ".dat")
         datfile = open(datpath, 'w')
 
         def write_seq_name(ffile, lline="", nname="", ssuffix=0, ccount=0):
@@ -188,16 +185,16 @@ def validate_reads(inpathR1, inpathR2, outdir, libname, pattern, datout, rename,
         infileR2 = SeqIO(inpathR2, fileformat="FASTQ")
 
         # CREATE AND OPEN OUTPUT FILES
-        if seqformatter.dryrun:
+        if readformatter.dryrun:
             pass
         elif gzout:
-            outpathR1 = os.path.join(outdir, libname + seqformatter.suffix + "_R1.fq.gz")
-            outpathR2 = os.path.join(outdir, libname + seqformatter.suffix + "_R2.fq.gz")
+            outpathR1 = os.path.join(outdir, libname + readformatter.suffix + "_R1.fq.gz")
+            outpathR2 = os.path.join(outdir, libname + readformatter.suffix + "_R2.fq.gz")
             outfileR1 = gzip.open(outpathR1, 'wt')
             outfileR2 = gzip.open(outpathR2, 'wt')
         else:
-            outpathR1 = os.path.join(outdir, libname + seqformatter.suffix + "_R1.fq")
-            outpathR2 = os.path.join(outdir, libname + seqformatter.suffix + "_R2.fq")
+            outpathR1 = os.path.join(outdir, libname + readformatter.suffix + "_R1.fq")
+            outpathR2 = os.path.join(outdir, libname + readformatter.suffix + "_R2.fq")
             outfileR1 = open(outpathR1, 'w')
             outfileR2 = open(outpathR2, 'w')
 
@@ -206,13 +203,13 @@ def validate_reads(inpathR1, inpathR2, outdir, libname, pattern, datout, rename,
         infileR1 = SeqIO(inpathR1, fileformat="FASTQ")
 
         # CREATE AND OPEN OUTPUT FILES
-        if seqformatter.dryrun:
+        if readformatter.dryrun:
             pass
         elif gzout:
-            outpathR1 = os.path.join(outdir, libname + seqformatter.suffix + ".fq.gz")
+            outpathR1 = os.path.join(outdir, libname + readformatter.suffix + ".fq.gz")
             outfileR1 = gzip.open(outpathR1, 'wt')
         else:
-            outpathR1 = os.path.join(outdir, libname + seqformatter.suffix + ".fq")
+            outpathR1 = os.path.join(outdir, libname + readformatter.suffix + ".fq")
             outfileR1 = open(outpathR1, 'w')
 
     else:
@@ -231,7 +228,7 @@ def validate_reads(inpathR1, inpathR2, outdir, libname, pattern, datout, rename,
                 outfileR2.write("{0:s}\n+{1:s}\n{2:s}\n".format(read2.seq, read2.info, read2.qual))
             else:
                 filtered += 1
-        if not seqformatter.dryrun:
+        if not readformatter.dryrun:
             [x.close() for x in [outfileR1, outfileR2]]
 
     else:
@@ -245,13 +242,13 @@ def validate_reads(inpathR1, inpathR2, outdir, libname, pattern, datout, rename,
                 outfileR1.write("{0:s}\n+{1:s}\n{2:s}\n".format(read1.seq, read1.info, read1.qual))
             else:
                 filtered += 1
-        if not seqformatter.dryrun:
+        if not readformatter.dryrun:
             outfileR1.close()
 
-    if rename and not seqformatter.dryrun:
+    if rename and not readformatter.dryrun:
         datfile.close()
 
-    if not seqformatter.dryrun:
+    if not readformatter.dryrun:
         barcode = read1.barcode
     else:
         barcode = "NA"

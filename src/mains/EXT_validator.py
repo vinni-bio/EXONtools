@@ -1,11 +1,11 @@
 # ENCODING: UTF-8
 
-# This file was created by Kirill Vinnikov on August 10, 2018
-# Copyright 2018 by Kirill Vinnikov. All rights reserved.
+# This file was created by Kirill Vinnikov on August 10, 2020
+# Copyright 2020 by Kirill Vinnikov. All rights reserved.
 
 # This code is a part of the EXONtools distribution and governed
 # by its license. Please see the LICENSE.txt file that should
-# have been included in the root folder of the EXONtools package.
+# have been included in the root directory of the EXONtools package.
 
 from __future__ import print_function, division
 import sys
@@ -59,7 +59,7 @@ def import_module_test(module, force_install=False):
                     sys.exit("EXONtools cannot install the '{0}' module with 'force_install'. Please try to install it manually:\n 'pip install [--user] {0}'".format(module))
                 print("The module '{}' was succesfully installed. Now you can run the EXONtools pipeline normally.".format(module))
             else:
-                sys.exit("'{0}' module is required by the EXONtools but currently it is not installed in your system.\nPlease run: 'pip install [--user] {0}' in your console.\nAlternatively you can run the command 'python EXONtools.py force_install'".format(module))
+                sys.exit("'{0}' module is required by the EXONtools pipeline but it is not installed in your system.\nPlease run: 'pip install [--user] {0}' in your console.\nAlternatively you can run the command 'python EXONtools.py force_install'".format(module))
 
 
 def memory_check(memvalue, minmem=1, maxpercmem=0.85):

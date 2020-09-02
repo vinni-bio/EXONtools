@@ -9,9 +9,9 @@
 # have been included in the root folder of the EXONtools package.
 
 description = """
-                        ##########################
-                               FORMAT_READS
-                        ##########################
+                ##########################
+                       FORMAT_READS
+                ##########################
 
 This command is used to rename all sequencing reads according
 to their file names, to convert FASTQ to FASTA format,
@@ -21,9 +21,10 @@ and provides some other useful tools.
 """
 
 epilog="""
-Provide path to the folder containing FASTQ files (-i) or to single
-paired and/or unpaired FASTQ files (-R1, -R2, -U).
-Currently, the following file extensions are supported for formatting:
+Provide path to a directory or to a file with FASTQ files (-i). Optionally,
+you can select single paired FASTQ files (-R1, -R2). If selecting directory,
+it will be parsed to identify paired files automatically.
+Currently, the following file extensions are supported for cleanup analysis:
 ['fastq','fq','fastq.gz','fq.gz'].
 
 All names of files with paired reads must include '_R1' for forward
@@ -40,8 +41,8 @@ IMPORTANT: File compression will greatly increase
 the overall time for running the command.
 But as a trade-off, it will significantly save your disk space
 
-Use '-S' or '--stats' general command option to create a'preclean_stats.csv' file
+Use '-S' or '--stats' general command option to create  'read_stats.csv' file
 with the list of library names, read numbers and barcodes
 
-'--fastqc' flag runs the FastQC analysis on precleaned fastq files
+'--rqc' option enables the read quality analysis using fastqc and multiqc
 """
