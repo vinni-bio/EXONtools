@@ -28,7 +28,7 @@ def setup_logger(level="INFO", logmode=False, quietmode=False):
         logpath = False
 
     logger = logging.getLogger(__name__)
-    logging.getLogger
+    # logging.getLogger
     logger.setLevel(loglevel)
     logformat = logging.Formatter(LOGFORMAT, DATEFMT)
 
@@ -38,6 +38,7 @@ def setup_logger(level="INFO", logmode=False, quietmode=False):
         logger.addHandler(file_handler)
 
     if quietmode:
+        logger.setLevel(40)
         stream_handler = logging.StreamHandler(sys.stdout)
         stream_handler.setLevel(logging.ERROR)
         stream_handler.setFormatter(logformat)

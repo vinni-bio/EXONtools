@@ -1,12 +1,12 @@
 # ENCODING: UTF-8
 
 
-# This file was created by Kirill Vinnikov on August 10, 2019
-# Copyright 2019 by Kirill Vinnikov. All rights reserved.
+# This file was created by Kirill Vinnikov on August 10, 2020
+# Copyright 2020 by Kirill Vinnikov. All rights reserved.
 
 # This code is a part of the EXONtools distribution and governed
 # by its license. Please see the LICENSE.txt file that should
-# have been included in the root folder of the EXONtools package.
+# have been included in the root directory of the EXONtools package.
 
 from __future__ import print_function, division
 import os
@@ -71,6 +71,9 @@ class readformatter(EXTprogram):
             if pattern.lower() == "illumina":
                 logging.info("Reads will be verified for conforming the Illumina raw read format")
                 patterncheck = "^(.*) [1|2]*:N:\d*:.*$"
+            elif pattern.lower() == "torrent":
+                logging.info("Reads will be verified for conforming the Ion Torrent raw read format")
+                patterncheck = "^\w+:\d+:\d+$"
             elif pattern.lower() == "exontools":
                 logging.info("Reads will be verified for conforming the EXONtools read name format")
                 patterncheck = "^([^\s|_]+_[un]*paired_ID\d+)/\d$"
@@ -138,7 +141,7 @@ class readformatter(EXTprogram):
             statdir = makenewdir(name=os.path.join(output.path, "STATS"), fullname="STATS")
             logging.info("Read stats will be saved to 'STATS/read_stats.csv'")
             header = ["No", "Library", "BARCODE", "#READS", "#FILTERED"]
-            with open(os.path.join(statdir, "read_stats.csv"), 'w') as statfile:
+            with open(os.path.join(statdir.path, "read_stats.csv"), 'w') as statfile:
                 csv_writer = csv.writer(statfile)
                 csv_writer.writerow(header)
                 for i, lib in enumerate(sorted(stats_collector.keys(), key=natural_sort)):

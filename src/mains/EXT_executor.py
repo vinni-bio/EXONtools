@@ -151,7 +151,7 @@ class executor(object):
         else:
             output = open(os.devnull, 'wb')
         if not self.quiet:
-            logging.info("Running '{0:s}' program".format(self.program))
+            logging.info("Running '{0:s}' analysis".format(self.program))
         if executor.dryrun:
             logging.info("Implementing the dry run mode. No output will be provided")
             logging.info(self.command)
@@ -196,7 +196,7 @@ class executor(object):
                     logging.error("Configuration file error. Only one program is allowed when program path leads to a file")
                     raise EXONtoolsError("Configuration file error")
                 else:
-                    prog = getlist(config.get("PROGRAMS", opt))[0].lower()
+                    prog = getlist(config.get("PROGRAMS", opt))[0]
                     executor.prognames[prog] = opt
                     if config.get("PATHS", opt).lower() == "default":
                         p = subprocess.Popen('which ' + prog, shell=True, stdout=subprocess.PIPE, universal_newlines=True)

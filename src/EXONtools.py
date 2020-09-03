@@ -97,15 +97,15 @@ def main(argv):
     IOoptions.add_argument("-R2", "--reverse", action="store", required=False, help="Path to a single fastq file containing reverse (_R2) paired reads", type=str, metavar="<path>", dest="reverse")
     IOoptions.add_argument("-U", "--unpaired", action="store", required=False, help="Path to a single fastq file containing unpaired reads", type=str, metavar="<path>", dest="unpaired")
     Fsettings = format_reads.add_argument_group(title="Read format settings")
-    Fsettings.add_argument("--type", action="store", help="Read name pattern. Choices are: 'Illumina', 'EXONtools' and 'CUSTOM'", default="Illumina", choices = ["illumina","exontools","custom"], type=str.lower, dest="pattern", metavar="<str>")
+    Fsettings.add_argument("--type", action="store", help="Read name pattern. Choices are: 'Illumina', 'Torrent', EXONtools' and 'CUSTOM'", default="Illumina", choices = ["illumina","torrent", "exontools","custom"], type=str.lower, dest="pattern", metavar="<str>")
     Fsettings.add_argument("--custom", action="store", help="Custom grep pattern to capture complete read name identifier", default="", type=str, dest="customgrep", metavar="<str>")
     Fsettings.add_argument("--rename", help="Rename read names using library identifiers", action="store_true", default=False, dest="rename")
     miscopts = format_reads.add_argument_group(title="Miscellaneous command options")
-    miscopts.add_argument("--fastqc", help="Performs fastqc analysis", action="store_true", dest="fastqc")
+    miscopts.add_argument("--rqc", help="Performs fread quality check on formatted files", action="store_true", dest="rqc")
     miscopts.add_argument("--gzip", help="Compress output files", action="store_true", default=False, dest="gzoutput")
     miscopts.add_argument("--skip", help="Skip FASTQ format check", action="store_true", dest="skipcheck")
     miscopts.add_argument("--suffix", action="store", help="Ending that will be automatically added to all output file names", type=str, dest="suffix", default="", metavar="<str>")
-    miscopts.add_argument("--program", default="seqformatter", action="store", choices=['seqformatter'], help="Indicates which program to use for read formatting. Choices are: ['seqformatter']", dest="program", metavar="<program name>")
+    miscopts.add_argument("--program", default="readformatter", action="store", choices=['readformatter'], help="Indicates which program to use for read formatting. Choices are: ['readformatter']", dest="program", metavar="<program name>")
     format_reads.set_defaults(command=format_reads_com.command)
 
     # STEPS B1 and E1: reconstruct de novo assemblies
@@ -330,6 +330,7 @@ def main(argv):
     logger.debug("Writing json file with command parameters: OK")
 
     new_logger_settings()
+
     # Check processors
     if args.threads > cpu_count() or args.threads <= 0:
         logging.error("Please choose the correct number of threads. Maximum allowed = {max_thr:d}\n".format(max_thr=cpu_count()))

@@ -264,6 +264,45 @@ EXONtools.py
 ## Step-by-step example
 
 ```text
+#! /usr/bin/env bash
+
+##########################################
+### Welcome to the EXONtools pipeline! ###
+##########################################
+
+### CREATE TEST DIRECTORY
+mkdir TEST
+cd TEST
+
+#####################################
+### STAGE A. Processing raw reads ###
+#####################################
+
+### STEP A1. Demultiplexing (demultiplex_reads)
+../../src/EXONtools.py -S demultiplex_reads -R1 ../data/rnaseq/ST_rna_R1.fastq.gz -R2 ../data/rnaseq/ST_rna_R2.fastq.gz -o STEP_A1_DEMULTIPLEX -t 1  -b ../misc_files/rnaseq_indexes.dat
+
+### STEP A2. Formatting (format_reads)
+../../src/EXONtools.py -T 2 -S format_reads --rename --rqc --type Illumina -i STEP_A1_DEMULTIPLEX -o STEP_A2_PRECLEAN 
+
+### STEP A3. Error correction (correct_reads)
+
+
+
+
+#####################################
+### STAGE D. Processing raw reads ###
+#####################################
+
+### STEP D1. Demultiplexing (demultiplex_reads)
+cat ../data/exonseq/POPSET_S92_L004_R1.fastq.gz.a ../data/exonseq/POPSET_S92_L004_R1.fastq.gz.b > POPSET_S92_L004_R1.fastq.gz
+cat ../data/exonseq/POPSET_S92_L004_R2.fastq.gz.a ../data/exonseq/POPSET_S92_L004_R2.fastq.gz.b > POPSET_S92_L004_R2.fastq.gz
+../../src/EXONtools.py -S demultiplex_reads -R1 POPSET_S92_L004_R1.fastq.gz -R2 POPSET_S92_L004_R2.fastq.gz -o STEP_D1_DEMULTIPLEX -t 1 -b ../misc_files/exon_indexes.dat
+
+### STEP D2. Formatting (format_reads)
+../../src/EXONtools.py -T 2 -S format_reads --rename --rqc --type Illumina -i STEP_D1_DEMULTIPLEX -o STEP_D2_PRECLEAN
+
+### STEP D3. 
+
 
 ```
 
