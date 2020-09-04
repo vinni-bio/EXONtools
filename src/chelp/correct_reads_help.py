@@ -9,17 +9,14 @@
 # have been included in the root directory of the EXONtools package.
 
 description = """
-                ##########################
-                       FORMAT_READS
-                ##########################
+                        ########################
+                             CORRECT_READS
+                        ########################
 
-This command is used to rename all sequencing reads according
-to their file names, to convert FASTQ to FASTA format, and
-to remove all reads that didn't pass filters.
-
+This command finds and fixes sequencing errors within fastq files
 """
 
-epilog="""
+epilog = """
 Provide path to a directory or to a file with FASTQ files (-i). Optionally,
 you can select single paired FASTQ files (-R1, -R2) or single unpaired files (-U).
 If selecting directory, it will be parsed to identify paired files automatically.
@@ -30,23 +27,18 @@ All names of files with paired reads must include '_R1' for forward
 and '_R2' for reverse reads. If these identifiers are not provided,
 the files will be treated as unpaired.
 
-When optional '--rename' flag is added to the command, all reads will be
-renamed according to their library identifiers provided in their file names
-before the first underscore ('_'). All previous read names will be saved
-to file 'LIBNAME_names.dat'
-
-The following GREP formats are used to validate reads (--type option):
-Illumina    -     ^(.*) [1|2]*:N:\d*:.*$
-Torrent     -     ^\w+:\d+:\d+$
-EXONtools   -     ^([^\s|_]+_[un]*paired_ID\d+)/\d$
-CUSTOM      -     Provide your own pattern in quotes
-
-Use '--gzip' flag if you want to compress your output files.
-IMPORTANT: File compression will greatly increase the overall running time.
-But as a trade-off, it will save your disk space
-
 Use '-S' or '--stats' general command option to create 'read_stats.csv' file
 with the list of library names, read numbers and barcodes
 
 '--rqc' option enables the read quality analysis using 'fastqc' and 'multiqc'
+
+Please also cite Bayeshammer when correcting Illumina data:
+'Nikolenko, S.I., Korobeynikov, A.I. and Alekseyev, M.A., 2013. BayesHammer:
+Bayesian clustering for error correction in single-cell sequencing. BMC Genomics 14, S7'
+
+Please also cite Ionhammer when Ion Torrent data:
+'Ershov, V., Tarasov, A., Lapidus, A. and Korobeynikov, A., 2019. IonHammer: 
+Homopolymer-space hamming clustering for IonTorrent read error correction. 
+J. Comput. Biol., 26(2), 124-127.'
+
 """

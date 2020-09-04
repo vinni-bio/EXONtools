@@ -47,7 +47,7 @@ Bayesian clustering for error correction in single-cell sequencing. BMC Genomics
 
 BBmap
 'Bushnell, B., 2018. BBMap: Short read aligner for DNA and RNA-seq data.
-URL: https://sourceforge.net/projects/bbmap/ (accessed 19 July, 2018)'
+URL: https://sourceforge.net/projects/bbmap/ (accessed 19 July, 2020)'
 
 BLAST
 'Altschul, S.F., Gish, W., Miller, W., Myers, E.W. and Lipman, D.J., 1990.
@@ -58,7 +58,7 @@ BLAT
 
 Bowtie2
 'Langmead, B. and Salzberg, S.L., 2012. Fast gapped-read alignment with Bowtie 2.
-Nat. Methods 9, 357-359.'
+Nat. Methods 9, 357-359'
 
 bwa
 'Li, H. and Durbin, R., 2009. Fast and accurate short read alignment with
@@ -79,6 +79,15 @@ sequencing reads. EMBnet J. 17, 10-12'
 FastQC
 'Andrews, S., 2010. FastQC: a quality control tool for high throughput sequence data.'
 
+FLASH
+'Magoč T.,  Salzberg S.L., 2011. FLASH: fast length adjustment of short reads
+to improve genome assemblies. Bioinformatics. 27, 2957-2963'
+
+IonHammer
+'Ershov, V., Tarasov, A., Lapidus, A. and Korobeynikov, A., 2019. IonHammer: 
+Homopolymer-space hamming clustering for IonTorrent read error correction. 
+J. Comput. Biol., 26(2), 124-127'
+
 MAFFT
 'Katoh, K. and Standley, D.M., 2013. MAFFT multiple sequence alignment software version 7:
 improvements in performance and usability. Mol. Biol. Evol. 30, 772-780'
@@ -86,10 +95,6 @@ improvements in performance and usability. Mol. Biol. Evol. 30, 772-780'
 MultiQC
 'Ewels, P., Magnusson, M., Lundin, S. and Käller, M., 2016. MultiQC: summarize analysis
 results for multiple tools and samples in a single report. Bioinformatics 32, 3047-3048.'
-
-PEAR
-'Zhang, J., Kobert, K., Flouri, T. and Stamatakis, A., 2013. PEAR: a fast and accurate
-Illumina Paired-End reAd mergeR. Bioinformatics 30, 614-620'
 
 SAMTOOLS
 'Li, H., Handsaker, B., Wysoker, A., Fennell, T., Ruan, J., Homer, N., Marth, G.,

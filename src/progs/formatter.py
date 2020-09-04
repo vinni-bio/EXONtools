@@ -34,9 +34,9 @@ class readformatter(EXTprogram):
 
     def execute_program(self):
         args = self.args
-        self.format_seqs(args.inpath, args.forward, args.reverse, args.outdir, args.gzoutput, args.rename, args.pattern, args.customgrep, args.skipcheck, args.rqc)
+        self.format_seqs(args.inpath, args.forward, args.reverse, args.outdir, args.gzoutput, args.fq2fa, args.rename, args.pattern, args.customgrep, args.skipcheck, args.rqc)
 
-    def format_seqs(self, inpath, forward, reverse, outdir, gzoutput, rename, pattern, customgrep, skipcheck, rqc):
+    def format_seqs(self, inpath, forward, reverse, outdir, gzoutput, fq2fa, rename, pattern, customgrep, skipcheck, rqc):
 
         if readformatter.debug:
             pdb.set_trace()
@@ -48,10 +48,6 @@ class readformatter(EXTprogram):
         if rqc:
             executor.setconfig("fastqc", "multiqc")
 
-        # SET DRY RUN AND DEBUGGING MODES FOR SUBCLASSES
-        readformatter.run_dry(getinput, output, makenewdir, executor)
-        readformatter.set_debug(executor)
-
         if readformatter.debug:
             pdb.set_trace()
 
@@ -60,6 +56,9 @@ class readformatter(EXTprogram):
 
         if skipcheck:
             logging.warning("Skipping FASTQ read identifier checkup... Only parsing output will be performed")
+
+        if fq2fa:
+            logging.warning("All reads will be transformed to FASTA format (--fasta)")
 
         if customgrep and pattern.lower() != "custom":
             logging.error("You can use any custom grep pattern only after you select '--type CUSTOM' option")
@@ -111,10 +110,10 @@ class readformatter(EXTprogram):
             datnames = None
         if paired:
             for lib in sorted(paired.keys(), key=natural_sort):
-                TASKS.append(worker(validate_reads, [paired[lib][0], paired[lib][1], output.path, lib, patterncheck, datnames, rename, gzoutput, skipcheck]))
+                TASKS.append(worker(validate_reads, [paired[lib][0], paired[lib][1], output.path, lib, patterncheck, datnames, rename, gzoutput, skipcheck, fq2fa]))
         if unpaired:
             for lib in sorted(unpaired.keys(), key=natural_sort):
-                TASKS.append(worker(validate_reads, [unpaired[lib][0], None, output.path, lib, patterncheck, datnames, rename, gzoutput, skipcheck]))
+                TASKS.append(worker(validate_reads, [unpaired[lib][0], None, output.path, lib, patterncheck, datnames, rename, gzoutput, skipcheck, fq2fa]))
 
         logging.info("Running the FASTQ read checkup analysis for all files")
         if TASKS:
@@ -152,35 +151,38 @@ class readformatter(EXTprogram):
                 pdb.set_trace()
 
         # PERFORMS READ QUALITY TESTS
-        if rqc and not readformatter.stats:
-            statdir = makenewdir(name=os.path.join(output.path, "STATS"), fullname="STATS")
-        if rqc and gzoutput and not readformatter.dryrun:
-            rqc_test(output.path, statdir.path, readformatter.threads, extension="*.gz", comment="Read formatting analysis")
-        elif rqc and not readformatter.dryrun:
-            rqc_test(output.path, statdir.path, readformatter.threads, comment="Read formatting analysis")
+        if rqc and fq2fa:
+            logging.warning("Quality analysis cannot be done on FASTA files. Please provide them in FASTQ format")
         else:
-            pass
+            if rqc and not readformatter.stats:
+                statdir = makenewdir(name=os.path.join(output.path, "STATS"), fullname="STATS")
+            if rqc and gzoutput and not readformatter.dryrun:
+                rqc_test(output.path, statdir.path, readformatter.threads, extension="*.gz", comment="Read formatting analysis")
+            elif rqc and not readformatter.dryrun:
+                rqc_test(output.path, statdir.path, readformatter.threads, comment="Read formatting analysis")
+            else:
+                pass
 
 
-def validate_reads(inpathR1, inpathR2, outdir, libname, pattern, datout, rename, gzout, skipcheck):
+def validate_reads(inpathR1, inpathR2, outdir, libname, pattern, datout, rename, gzout, skipcheck, fq2fa):
     """Perform all FASTQ checkups and save the output"""
 
     if readformatter.dryrun:
-        def write_seq_name(ffile, lline="", nname="", ssuffix=0, ccount=0):
+        def write_seq_name(ffile, lline="", nname="", pprefix ='@', ssuffix=0, ccount=0):
             pass
 
     elif rename:
         datpath = os.path.join(datout.path, libname + readformatter.suffix + ".dat")
         datfile = open(datpath, 'w')
 
-        def write_seq_name(ffile, lline="", nname="", ssuffix=0, ccount=0):
-            ffile.write("@{0:s}_ID{1:d}/{2:d}\n".format(nname, ccount, ssuffix))
+        def write_seq_name(ffile, lline="", nname="", pprefix ='@', ssuffix=0, ccount=0):
+            ffile.write("{0:s}{1:s}_ID{2:d}/{3:d}\n".format(pprefix,nname, ccount, ssuffix))
             if ssuffix == 1:
                 datfile.write("{0:s}_ID{1:d}\t{2:s}\n".format(nname, ccount, lline.split()[0]))
     else:
         # Switch the rename function off.
-        def write_seq_name(ffile, lline="", nname="", ssuffix=0, ccount=0):
-            ffile.write("@{0:s}\n".format(lline))
+        def write_seq_name(ffile, lline="", nname="", pprefix ='@', ssuffix=0, ccount=0):
+            ffile.write("{0:s}{1:s}\n".format(pprefix,lline))
 
     if inpathR1 and inpathR2:
         logging.info("Running checkup analysis on paired reads in {0:s} library".format(libname.split()[0]))
@@ -190,11 +192,21 @@ def validate_reads(inpathR1, inpathR2, outdir, libname, pattern, datout, rename,
         # CREATE AND OPEN OUTPUT FILES
         if readformatter.dryrun:
             pass
+        elif gzout and fq2fa:
+            outpathR1 = os.path.join(outdir, libname + readformatter.suffix + "_R1.fa.gz")
+            outpathR2 = os.path.join(outdir, libname + readformatter.suffix + "_R2.fa.gz")
+            outfileR1 = gzip.open(outpathR1, 'wt')
+            outfileR2 = gzip.open(outpathR2, 'wt')
         elif gzout:
             outpathR1 = os.path.join(outdir, libname + readformatter.suffix + "_R1.fq.gz")
             outpathR2 = os.path.join(outdir, libname + readformatter.suffix + "_R2.fq.gz")
             outfileR1 = gzip.open(outpathR1, 'wt')
             outfileR2 = gzip.open(outpathR2, 'wt')
+        elif fq2fa:
+            outpathR1 = os.path.join(outdir, libname + readformatter.suffix + "_R1.fa")
+            outpathR2 = os.path.join(outdir, libname + readformatter.suffix + "_R2.fa")
+            outfileR1 = open(outpathR1, 'w')
+            outfileR2 = open(outpathR2, 'w')
         else:
             outpathR1 = os.path.join(outdir, libname + readformatter.suffix + "_R1.fq")
             outpathR2 = os.path.join(outdir, libname + readformatter.suffix + "_R2.fq")
@@ -208,9 +220,15 @@ def validate_reads(inpathR1, inpathR2, outdir, libname, pattern, datout, rename,
         # CREATE AND OPEN OUTPUT FILES
         if readformatter.dryrun:
             pass
+        elif gzout and fq2fa:
+            outpathR1 = os.path.join(outdir, libname + readformatter.suffix + ".fa.gz")
+            outfileR1 = gzip.open(outpathR1, 'wt')
         elif gzout:
             outpathR1 = os.path.join(outdir, libname + readformatter.suffix + ".fq.gz")
             outfileR1 = gzip.open(outpathR1, 'wt')
+        elif fq2fa:
+            outpathR1 = os.path.join(outdir, libname + readformatter.suffix + ".fa")
+            outfileR1 = open(outpathR1, 'w')
         else:
             outpathR1 = os.path.join(outdir, libname + readformatter.suffix + ".fq")
             outfileR1 = open(outpathR1, 'w')
@@ -225,10 +243,16 @@ def validate_reads(inpathR1, inpathR2, outdir, libname, pattern, datout, rename,
         for read1, read2 in zip(infileR1.read(), infileR2.read()):
             if skipcheck or (not read1.filtered and not read1.filtered and read1.name == read2.name and read1.pair == 1 and read2.pair == 2 and re.search(pattern, read1.identifier)):
                 count += 1
-                write_seq_name(ffile=outfileR1, lline=read1.identifier, nname=libname, ssuffix=1, ccount=count)
-                outfileR1.write("{0:s}\n+{1:s}\n{2:s}\n".format(read1.seq, read1.info, read1.qual))
-                write_seq_name(ffile=outfileR2, lline=read2.identifier, nname=libname, ssuffix=2, ccount=count)
-                outfileR2.write("{0:s}\n+{1:s}\n{2:s}\n".format(read2.seq, read2.info, read2.qual))
+                if fq2fa:
+                    write_seq_name(ffile=outfileR1, lline=read1.identifier, nname=libname, pprefix = '>', ssuffix=1, ccount=count)
+                    outfileR1.write("{0:s}\n".format(read1.seq))
+                    write_seq_name(ffile=outfileR2, lline=read2.identifier, nname=libname, pprefix = '>', ssuffix=2, ccount=count)
+                    outfileR2.write("{0:s}\n".format(read2.seq))
+                else:
+                    write_seq_name(ffile=outfileR1, lline=read1.identifier, nname=libname, ssuffix=1, ccount=count)
+                    outfileR1.write("{0:s}\n+{1:s}\n{2:s}\n".format(read1.seq, read1.info, read1.qual))
+                    write_seq_name(ffile=outfileR2, lline=read2.identifier, nname=libname, ssuffix=2, ccount=count)
+                    outfileR2.write("{0:s}\n+{1:s}\n{2:s}\n".format(read2.seq, read2.info, read2.qual))
             else:
                 filtered += 1
         if not readformatter.dryrun:
@@ -240,9 +264,14 @@ def validate_reads(inpathR1, inpathR2, outdir, libname, pattern, datout, rename,
         for read1 in infileR1.read():
             if skipcheck or re.search(pattern, read1.identifier):
                 count += 1
-                seqname = read1.identifier.replace("/2", "/1").replace("_R2", "_R1")
-                write_seq_name(ffile=outfileR1, lline=seqname, nname=libname, ssuffix=1, ccount=count)
-                outfileR1.write("{0:s}\n+{1:s}\n{2:s}\n".format(read1.seq, read1.info, read1.qual))
+                if fq2fa:
+                    seqname = read1.identifier.replace("/2", "/1").replace("_R2", "_R1")
+                    write_seq_name(ffile=outfileR1, lline=seqname, nname=libname, pprefix=">", ssuffix=1, ccount=count)
+                    outfileR1.write("{0:s}\n".format(read1.seq))
+                else:
+                    seqname = read1.identifier.replace("/2", "/1").replace("_R2", "_R1")
+                    write_seq_name(ffile=outfileR1, lline=seqname, nname=libname, ssuffix=1, ccount=count)
+                    outfileR1.write("{0:s}\n+{1:s}\n{2:s}\n".format(read1.seq, read1.info, read1.qual))
             else:
                 filtered += 1
         if not readformatter.dryrun:
@@ -259,6 +288,9 @@ def validate_reads(inpathR1, inpathR2, outdir, libname, pattern, datout, rename,
     if not barcode:
         barcode = "NA"
 
-    logging.info("Total {0:d} FASTQ reads passed EXONtools checkup in '{1:s}' library".format(count, libname))
+    if fq2fa:
+        logging.info("Total {0:d} FASTA sequences passed EXONtools checkup in '{1:s}' library".format(count, libname))
+    else:
+        logging.info("Total {0:d} FASTQ sequences passed EXONtools checkup in '{1:s}' library".format(count, libname))
 
     return {libname: [libname, barcode, count, filtered]}

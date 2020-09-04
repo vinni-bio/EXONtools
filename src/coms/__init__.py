@@ -4,6 +4,7 @@ __all__ = [
     "call_bases_com",
     "clean_reads_com",
     "consensus_assembly_com",
+    "correct_reads_com",
     "demultiplex_reads_com",
     "evaluate_assembly_com",
     "evaluate_mapping_com",

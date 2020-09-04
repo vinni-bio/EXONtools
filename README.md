@@ -94,13 +94,13 @@ Please install the following Python packages with PIP:
 - [NUMPY](https://numpy.org/install) `pip install numpy`
 - [PSUTIL](https://psutil.readthedocs.io/en/latest/) `pip install psutil`
 
-**IMPORTANT!!!** Many steps in the EXONtools pipeline rely on one or several dependency programs that must be preinstalled manually ~~or by running the docker image of the EXONtools pipeline~~ (*in prep.*). The list of all required dependencies is provided [here](https://github.com/vinni-bio/EXONtools#links-to-exontools-dependencies) and in the configuration file `dependencies.ini` located in `EXONtools/src` directory. **Using the `dependencies.ini` file, please provide paths for necessary dependency programs before starting the pipeline.**
+**IMPORTANT!!!** Many steps in the EXONtools pipeline rely on one or several dependency programs that must be preinstalled manually ~~or by running the docker image of the EXONtools pipeline~~ (*in prep.*). The list of all required dependencies is provided [here](https://github.com/vinni-bio/EXONtools#links-to-exontools-dependencies) and in the configuration file `dependencies.ini` located in `EXONtools/src` directory. **Please provide the paths for all required dependency programs in the `dependencies.ini` file before using the pipeline.**
 
 **IMPORTANT!!!** Installation of all dependencies is not required. Some dependencies can be omitted if the corresponding pipeline step is not going to be used in the analysis of ECS data. To skip dependency installation just leave a blank line in the \[PATHS\] option of the `dependencies.ini` file like that:
 
 ```fastqc =```
 
-**IMPORTANT!!!** If dependency is installed using the environment PATH, just type the 'default' value in the \[PATHS\] option of the `dependencies.ini` file like that:
+**IMPORTANT!!!** If dependency is installed in the environment PATH  (e.g., `/usr/local/bin`), just leave the `default` value in the \[PATHS\] option of the `dependencies.ini` file. In this case, the default command must **match the program name**:
 
 ```fastqc = default```
 
@@ -261,7 +261,7 @@ EXONtools.py
 
 \* rename `pblat` file to `blat` file to keep using the parallel BLAT
 
-## Step-by-step example
+## Step-by-step pipeline example
 
 ```text
 #! /usr/bin/env bash
@@ -279,13 +279,13 @@ cd TEST
 #####################################
 
 ### STEP A1. Demultiplexing (demultiplex_reads)
-../../src/EXONtools.py -S demultiplex_reads -R1 ../data/rnaseq/ST_rna_R1.fastq.gz -R2 ../data/rnaseq/ST_rna_R2.fastq.gz -o STEP_A1_DEMULTIPLEX -t 1  -b ../misc_files/rnaseq_indexes.dat
+../../src/EXONtools.py -S demultiplex_reads -R1 ../data/rnaseq/ST_rna_R1.fastq.gz -R2 ../data/rnaseq/ST_rna_R2.fastq.gz -o STEP_A1_DEMULTIPLEX -t 1  -b ../misc_files/rnaseq_indexes.dat --suffix "_demux"
 
 ### STEP A2. Formatting (format_reads)
-../../src/EXONtools.py -T 2 -S format_reads --rename --rqc --type Illumina -i STEP_A1_DEMULTIPLEX -o STEP_A2_PRECLEAN 
+../../src/EXONtools.py -T 2 -S format_reads -i STEP_A1_DEMULTIPLEX -o STEP_A2_PRECLEAN --rename --rqc 
 
 ### STEP A3. Error correction (correct_reads)
-
+../../src/EXONtools.py -T 2 -S correct_reads -i STEP_A2_PRECLEAN -o STEP_A3_CORRECT --rna --suffix "_corr"
 
 
 
@@ -293,15 +293,18 @@ cd TEST
 ### STAGE D. Processing raw reads ###
 #####################################
 
-### STEP D1. Demultiplexing (demultiplex_reads)
+### Concatenate gzip files to a single archive
 cat ../data/exonseq/POPSET_S92_L004_R1.fastq.gz.a ../data/exonseq/POPSET_S92_L004_R1.fastq.gz.b > POPSET_S92_L004_R1.fastq.gz
 cat ../data/exonseq/POPSET_S92_L004_R2.fastq.gz.a ../data/exonseq/POPSET_S92_L004_R2.fastq.gz.b > POPSET_S92_L004_R2.fastq.gz
-../../src/EXONtools.py -S demultiplex_reads -R1 POPSET_S92_L004_R1.fastq.gz -R2 POPSET_S92_L004_R2.fastq.gz -o STEP_D1_DEMULTIPLEX -t 1 -b ../misc_files/exon_indexes.dat
+
+### STEP D1. Demultiplexing (demultiplex_reads)
+../../src/EXONtools.py -S demultiplex_reads -R1 POPSET_S92_L004_R1.fastq.gz -R2 POPSET_S92_L004_R2.fastq.gz -o STEP_D1_DEMULTIPLEX -t 1 -b ../misc_files/exon_indexes.dat --suffix "_demux"
 
 ### STEP D2. Formatting (format_reads)
-../../src/EXONtools.py -T 2 -S format_reads --rename --rqc --type Illumina -i STEP_D1_DEMULTIPLEX -o STEP_D2_PRECLEAN
+../../src/EXONtools.py -T 2 -S format_reads -i STEP_A2_PRECLEAN -o STEP_A3_CORRECT --rename --rqc 
 
-### STEP D3. 
+### STEP D3. Error correction (correct_reads)
+./../src/EXONtools.py -T 2 -S correct_reads -i STEP_A2_PRECLEAN -o STEP_A3_CORRECT --suffix "_corr"
 
 
 ```

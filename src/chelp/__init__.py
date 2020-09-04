@@ -6,6 +6,7 @@ __all__ = [
     "assemble_reads_help",
     "call_bases_help",
     "clean_reads_help",
+    "correct_reads_help",
     "consensus_assembly_help",
     "demultiplex_reads_help",
     "evaluate_assembly_help",

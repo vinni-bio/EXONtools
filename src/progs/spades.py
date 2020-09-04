@@ -2,12 +2,12 @@
 # ENCODING: UTF-8
 
 
-# This file was created by Kirill Vinnikov on August 10, 2018
-# Copyright 2018 by Kirill Vinnikov. All rights reserved.
+# This file was created by Kirill Vinnikov on August 10, 2020
+# Copyright 2020 by Kirill Vinnikov. All rights reserved.
 
 # This code is a part of the EXONtools distribution and governed
 # by its license. Please see the LICENSE.txt file that should
-# have been included in the root folder of the EXONtools package.
+# have been included in the root directory of the EXONtools package.
 
 from __future__ import print_function, division
 import pdb
@@ -77,7 +77,7 @@ class spades(EXTprogram):
 
         # MAKE LOG DIR
         log_dir = makenewdir(name="spades_logs", fullname="LOG")
-        logging.info("Find all SPAdes log files in {0:s}".format(os.path.basename(log_dir.path)))
+        logging.info("Find all SPAdes log files in {0:s} directory".format(os.path.basename(log_dir.path)))
 
         logging.debug("IO settings: OK")
 

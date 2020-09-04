@@ -100,13 +100,34 @@ def main(argv):
     Fsettings.add_argument("--type", action="store", help="Read name pattern. Choices are: 'Illumina', 'Torrent', EXONtools' and 'CUSTOM'", default="Illumina", choices = ["illumina","torrent", "exontools","custom"], type=str.lower, dest="pattern", metavar="<str>")
     Fsettings.add_argument("--custom", action="store", help="Custom grep pattern to capture complete read name identifier", default="", type=str, dest="customgrep", metavar="<str>")
     Fsettings.add_argument("--rename", help="Rename read names using library identifiers", action="store_true", default=False, dest="rename")
+    Fsettings.add_argument("--fasta", help="Convert FASTQ to FASTA", action="store_true", default=False, dest="fq2fa")
     miscopts = format_reads.add_argument_group(title="Miscellaneous command options")
-    miscopts.add_argument("--rqc", help="Performs fread quality check on formatted files", action="store_true", dest="rqc")
+    miscopts.add_argument("--rqc", help="Performs read quality check on formatted files", action="store_true", dest="rqc")
     miscopts.add_argument("--gzip", help="Compress output files", action="store_true", default=False, dest="gzoutput")
     miscopts.add_argument("--skip", help="Skip FASTQ format check", action="store_true", dest="skipcheck")
     miscopts.add_argument("--suffix", action="store", help="Ending that will be automatically added to all output file names", type=str, dest="suffix", default="", metavar="<str>")
     miscopts.add_argument("--program", default="readformatter", action="store", choices=['readformatter'], help="Indicates which program to use for read formatting. Choices are: ['readformatter']", dest="program", metavar="<program name>")
     format_reads.set_defaults(command=format_reads_com.command)
+
+    # STEPS A3 and D3: find and fix sequencing errors within fastq files
+    correct_reads = commands.add_parser("correct_reads", description=correct_reads_help.description, usage="EXONtools.py [general options] correct_reads [command options]", formatter_class=CustomFormatter, epilog=correct_reads_help.epilog)
+    correct_reads._optionals.title = "'correct_reads' command options"
+    IOoptions = correct_reads.add_argument_group(title="Input/Output settings")
+    IOoptions.add_argument("-i", "--in", action="store", help="Path to the directory containing read fastq files (alternative option to R1/R2/U)", type=str, required=False, metavar="<path>", dest="inpath")
+    IOoptions.add_argument("-o", "--out", action="store", help="Path to the output directory", type=str, default="./CORRECTED", metavar="<path>", dest="outdir")
+    IOoptions.add_argument("-R1", "--forward", action="store", required=False, help="Path to a single fastq file containing forward (_R1) paired reads", type=str, metavar="<path>", dest="forward")
+    IOoptions.add_argument("-R2", "--reverse", action="store", required=False, help="Path to a single fastq file containing reverse (_R2) paired reads", type=str, metavar="<path>", dest="reverse")
+    IOoptions.add_argument("-U", "--unpaired", action="store", required=False, help="Path to a single fastq file containing unpaired reads", type=str, metavar="<path>", dest="unpaired")
+    miscopts = correct_reads.add_argument_group(title="Miscellaneous command options")
+    miscopts.add_argument("--torrent", help="Required for IonTorrent data", action="store_true", default=False, dest="torrent")
+    miscopts.add_argument("--rqc", help="Performs read quality check on formatted files", action="store_true", dest="rqc")
+    miscopts.add_argument("--gzip", help="Compress output files", action="store_true", default=False, dest="gzoutput")
+    miscopts.add_argument("--skip", help="Skip FASTQ format check", action="store_true", dest="skipcheck")
+    miscopts.add_argument("--suffix", action="store", help="Ending that will be automatically added to all output file names", type=str, dest="suffix", default="", metavar="<str>")
+    miscopts.add_argument("--program", default="hammer", action="store", choices=['hammer'], help="Indicates which program to use for read formatting. Choices are: ['readformatter']", dest="program", metavar="<program name>")
+    correct_reads.set_defaults(command=correct_reads_com.command)
+
+
 
     # STEPS B1 and E1: reconstruct de novo assemblies
     assemble_reads = commands.add_parser("assemble_reads", description=assemble_reads_help.description, usage="EXONtools.py [general options] assemble_reads [command options]", formatter_class=CustomFormatter, epilog=assemble_reads_help.epilog)

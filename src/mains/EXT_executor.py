@@ -1,11 +1,11 @@
 # ENCODING: UTF-8
 
-# This file was created by Kirill Vinnikov on August 10, 2019
-# Copyright 2019 by Kirill Vinnikov. All rights reserved.
+# This file was created by Kirill Vinnikov on August 10, 2020
+# Copyright 2020 by Kirill Vinnikov. All rights reserved.
 
 # This code is a part of the EXONtools distribution and governed
 # by its license. Please see the LICENSE.txt file that should
-# have been included in the root folder of the EXONtools package.
+# have been included in the root directory of the EXONtools package.
 
 
 from __future__ import print_function
@@ -79,7 +79,7 @@ def DefaultConfig():
     config.set("PROGRAMS", "FASTQC", ["fastqc"])
     config.set("PROGRAMS", "MULTIQC", ["multiqc"])
     config.set("PROGRAMS", "SAMTOOLS", ["samtools"])
-    config.set("PROGRAMS", "SPADES", ["spades.py"])
+    config.set("PROGRAMS", "SPADES", ["spades"])
     config.set("PROGRAMS", "TRIMMOMATIC", ["trimmomatic"])
     config.set("PROGRAMS", "TRINITY", ["trinity"])
     config.set("PROGRAMS", "TRANSABYSS", ["transabyss"])
@@ -175,7 +175,7 @@ class executor(object):
             logging.warning("Writing the default config settings to {0:s}".format(executor.DEFAULT_CONFIG_FILEPATH))
             DefaultConfig()
         config.read(executor.DEFAULT_CONFIG_FILEPATH)
-        logging.info("Loading and testing configuration settings for all dependency programs")
+        logging.debug("Loading and testing configuration settings for all dependency programs")
 
         opts = config.options("PATHS")
         vers = config.options("VERSIONS")
@@ -201,6 +201,9 @@ class executor(object):
                     if config.get("PATHS", opt).lower() == "default":
                         p = subprocess.Popen('which ' + prog, shell=True, stdout=subprocess.PIPE, universal_newlines=True)
                         default_path, _ = p.communicate()
+                        if not default_path and prog =="spades":
+                            p = subprocess.Popen('which ' + prog+".py", shell=True, stdout=subprocess.PIPE, universal_newlines=True)
+                            default_path, _ = p.communicate()
                         if default_path and os.path.exists(default_path.strip()):
                             executor.program_paths[prog.lower()] = default_path.strip()
                             logging.debug("Setting the path for program '{0:s}' to {1:s}".format(prog, default_path.strip()))
@@ -334,7 +337,7 @@ class executor(object):
             "fastqc": (" -v", lambda x: x.strip().split()[1]),
             "multiqc": (" --version", lambda x: x.strip().split()[2]),
             "samtools": (" --version", lambda x: x.strip().split("\n")[0].split()[-1]),
-            "spades.py": (" --version", lambda x: x.strip().split("\n")[0].split()[-1]),
+            "spades": (" --version", lambda x: x.strip().split("\n")[0].split()[-1]),
             "transabyss": (" --version", lambda x: x.strip()),
             "trimmomatic": (" -version", lambda x: x.strip()),
             "trinity": (" --version", lambda x: x.strip().split("\n")[0].split()[-1]),
@@ -447,7 +450,8 @@ class executor(object):
             # ./samtools CMD OPTIONS
             "samtools": " {0:s} {1:s}",
             # ./spades.py --disable-gzip-output --only-assembler -k -cov-cutoff -o -t -m -1 -2 -s
-            "spades.py": " --disable-gzip-output {0:s} -o {1:s} -t {2:d} -m {3:d} {4:s}",
+            # ./spades.py --disable-gzip-output --only-error-correction -o -t -m -1 -2 -s
+            "spades": "  {0:s} -o {1:s} -t {2:d} -m {3:d} {4:s}",
             # ./tblastn -db DBDIR/NAME -query INFILE -out OUTFILE -outfmt 6 -evalue 1e-10 -num_threads INT OTHER PARS
             "tblastn": " -db {0:s} -query {1:s} -out {2:s} -outfmt {3:d} -evalue {4:s} -num_threads {5:d} {6:s}",            # ./tblastx -db DBDIR/NAME -query INFILE -out OUTFILE -outfmt 6 -evalue 1e-10 -num_threads INT OTHER PARS
             "tblastx": " -db {0:s} -query {1:s} -out {2:s} -outfmt {3:d} -evalue {4:s} -num_threads {5:d} {6:s}",
