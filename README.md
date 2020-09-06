@@ -279,13 +279,19 @@ cd TEST
 #####################################
 
 ### STEP A1. Demultiplexing (demultiplex_reads)
-../../src/EXONtools.py -S demultiplex_reads -R1 ../data/rnaseq/ST_rna_R1.fastq.gz -R2 ../data/rnaseq/ST_rna_R2.fastq.gz -o STEP_A1_DEMULTIPLEX -t 1  -b ../misc_files/rnaseq_indexes.dat --suffix "_demux"
+../../src/EXONtools.py -S demultiplex_reads \
+-R1 ../data/rnaseq/ST_rna_R1.fastq.gz \
+-R2 ../data/rnaseq/ST_rna_R2.fastq.gz \
+-o STEP_A1_DEMULTIPLEX -t 1  \
+-b ../misc_files/rnaseq_indexes.dat --suffix "_demux"
 
 ### STEP A2. Formatting (format_reads)
-../../src/EXONtools.py -T 2 -S format_reads -i STEP_A1_DEMULTIPLEX -o STEP_A2_PRECLEAN --rename --rqc 
+../../src/EXONtools.py -T 2 -S format_reads \
+-i STEP_A1_DEMULTIPLEX -o STEP_A2_PRECLEAN --rename --rqc
 
 ### STEP A3. Error correction (correct_reads)
-../../src/EXONtools.py -T 2 -S correct_reads -i STEP_A2_PRECLEAN -o STEP_A3_CORRECT --rna --suffix "_corr"
+../../src/EXONtools.py -T 2 -S correct_reads \
+-i STEP_A2_PRECLEAN -o STEP_A3_CORRECT --suffix "_corr"
 
 
 
@@ -294,17 +300,28 @@ cd TEST
 #####################################
 
 ### Concatenate gzip files to a single archive
-cat ../data/exonseq/POPSET_S92_L004_R1.fastq.gz.a ../data/exonseq/POPSET_S92_L004_R1.fastq.gz.b > POPSET_S92_L004_R1.fastq.gz
-cat ../data/exonseq/POPSET_S92_L004_R2.fastq.gz.a ../data/exonseq/POPSET_S92_L004_R2.fastq.gz.b > POPSET_S92_L004_R2.fastq.gz
+cat ../data/exonseq/POPSET_S92_L004_R1.fastq.gz.a \
+../data/exonseq/POPSET_S92_L004_R1.fastq.gz.b \
+> POPSET_S92_L004_R1.fastq.gz
+cat ../data/exonseq/POPSET_S92_L004_R2.fastq.gz.a \
+../data/exonseq/POPSET_S92_L004_R2.fastq.gz.b \
+> POPSET_S92_L004_R2.fastq.gz
 
 ### STEP D1. Demultiplexing (demultiplex_reads)
-../../src/EXONtools.py -S demultiplex_reads -R1 POPSET_S92_L004_R1.fastq.gz -R2 POPSET_S92_L004_R2.fastq.gz -o STEP_D1_DEMULTIPLEX -t 1 -b ../misc_files/exon_indexes.dat --suffix "_demux"
+../../src/EXONtools.py -S demultiplex_reads \
+-R1 POPSET_S92_L004_R1.fastq.gz -R2 POPSET_S92_L004_R2.fastq.gz \
+-o STEP_D1_DEMULTIPLEX -t 1 \
+-b ../misc_files/exon_indexes.dat --suffix "_demux"
 
 ### STEP D2. Formatting (format_reads)
-../../src/EXONtools.py -T 2 -S format_reads -i STEP_A2_PRECLEAN -o STEP_A3_CORRECT --rename --rqc 
+../../src/EXONtools.py -T 2 -S format_reads \
+-i STEP_D1_DEMULTIPLEX -o STEP_D2_PRECLEAN --rename --rqc
 
 ### STEP D3. Error correction (correct_reads)
-./../src/EXONtools.py -T 2 -S correct_reads -i STEP_A2_PRECLEAN -o STEP_A3_CORRECT --suffix "_corr"
+### This should take some time for multiple libraries
+### Use more threads to speed up
+../../src/EXONtools.py -T 2 -S correct_reads \
+-i STEP_A2_PRECLEAN -o STEP_D3_CORRECT --suffix "_corr"
 
 
 ```

@@ -451,7 +451,7 @@ class executor(object):
             "samtools": " {0:s} {1:s}",
             # ./spades.py --disable-gzip-output --only-assembler -k -cov-cutoff -o -t -m -1 -2 -s
             # ./spades.py --disable-gzip-output --only-error-correction -o -t -m -1 -2 -s
-            "spades": "  {0:s} -o {1:s} -t {2:d} -m {3:d} {4:s}",
+            "spades": " --disable-gzip-output {0:s} -o {1:s} -t {2:d} -m {3:d} {4:s}",
             # ./tblastn -db DBDIR/NAME -query INFILE -out OUTFILE -outfmt 6 -evalue 1e-10 -num_threads INT OTHER PARS
             "tblastn": " -db {0:s} -query {1:s} -out {2:s} -outfmt {3:d} -evalue {4:s} -num_threads {5:d} {6:s}",            # ./tblastx -db DBDIR/NAME -query INFILE -out OUTFILE -outfmt 6 -evalue 1e-10 -num_threads INT OTHER PARS
             "tblastx": " -db {0:s} -query {1:s} -out {2:s} -outfmt {3:d} -evalue {4:s} -num_threads {5:d} {6:s}",

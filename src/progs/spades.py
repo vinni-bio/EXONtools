@@ -121,7 +121,11 @@ class spades(EXTprogram):
             if not spades.dryrun:
 
                 spadelogpath = os.path.join(libouttmp, "spades.log")
-                shutil.move(spadelogpath, logpath)
+                try:
+                    shutil.move(spadelogpath, logpath)
+                except IOError:
+                    logging.error("EXONtools cannot find 'spades.log' file for '{0:s}' sample".format(lib))
+                    raise EXONtoolsError
 
                 kmerlist = [x for x in os.listdir(libouttmp) if os.path.isdir(os.path.join(libouttmp, x)) and re.search("K\d+", x)]
 

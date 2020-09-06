@@ -14,7 +14,7 @@ import logging
 # Print iterations progress
 
 
-def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=100, fill='█', printEnd="\r"):
+def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=75, fill='█', printEnd="\r"):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -31,4 +31,4 @@ def printProgressBar(iteration, total, prefix='', suffix='', decimals=1, length=
         percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / total))
         filledLength = int(length * iteration // total)
         bar = fill * filledLength + '-' * (length - filledLength)
-        print('\r{0:s} |{1:s}| {2:s} % {3:s}'.format(prefix, bar, percent, suffix), end=printEnd)
+        print('\r{0:s} |{1:s}| {2:s} % {3:s}'.format(prefix, bar, percent, suffix), end=printEnd, flush=True)

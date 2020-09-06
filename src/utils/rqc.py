@@ -24,7 +24,8 @@ def rqc_test(indir, outdir, threads, extension="*.fq", filetype="fastq", comment
 
     RQCdir = makenewdir(name=os.path.join(outdir, "RQC"), fullname="RQC")
 
-    logging.info("All read quality results will be saved to '{0:s}' directory".format(indir))
+    logging.info("All read quality results will be saved to:")
+    logging.info(RQCdir.path)
 
     run_executor(executor(
         program="fastqc",

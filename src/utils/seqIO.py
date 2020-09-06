@@ -77,7 +77,7 @@ class SeqIO(object):
             logging.error("Cannot delete '{0:s}' file because it has not been assigned yet".format(os.path.basename(self.path)))
             raise EXONtoolsError("Cannot delete file from non-existing path")
 
-    def totalcount(self, lines = False):
+    def totalcount(self, lines=False):
         """count records"""
 
         if not SeqIO.dryrun and os.path.getsize(self.path):
@@ -477,4 +477,3 @@ def readblock(infile, size=65536):
         if not b:
             break
         yield b
-        
