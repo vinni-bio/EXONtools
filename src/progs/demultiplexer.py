@@ -176,14 +176,14 @@ def savestats(results, outpath):
 def runqc(rqc, outpath, message, gzout):
     """Run QC analysis"""
     if rqc and not demultiplexer.stats and not demultiplexer.dryrun:
-        statdir = makenewdir(name=os.path.join(outpath, "STATS"), fullname="STATS")
+        statdir = makenewdir(name=os.path.join(outpath, "STATS"), fullname="STATS").path
     else:
         statdir = os.path.join(outpath, "STATS")
     if rqc and gzout and not demultiplexer.dryrun:
-        rqc_test(outpath, statdir.path, demultiplexer.threads, extension="*.gz", comment=message)
+        rqc_test(outpath, statdir, demultiplexer.threads, extension="*.gz", comment=message)
         debug()
     elif rqc and not demultiplexer.dryrun:
-        rqc_test(outpath, statdir.path, demultiplexer.threads, comment=message)
+        rqc_test(outpath, statdir, demultiplexer.threads, comment=message)
         debug()
     else:
         pass
@@ -420,7 +420,7 @@ def findbarcode(barcodes, filepath, outpath, suffix, tolerance, inseq, trim, sta
             for tolr in range(tolerance + 1):
                 barc_list = []
                 for i in range(barcrange[0], barcrange[1] + 1):
-                    barc = read1.seq[start - 1:start - 1 + i]
+                    barc = read1.seq[start - 1 : start - 1 + i]
                     if barc.count('N') == 1:
                         newbarks = replaceN(barc)
                         for bb in newbarks:

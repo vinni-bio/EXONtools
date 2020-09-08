@@ -170,9 +170,10 @@ class getinput(object):
                     unpaired[R2_libname] = [infileR2]
 
         if unpaired:
-            logging.info("The folowing files do not have their matching pair:")
+            logging.info("{0:d} files do not have matching pairs (unpaired)".format(len(unpaired)))
+            logging.debug("The folowing files do not have their matching pair:")
             for infile in sorted(unpaired.keys()):
-                logging.info(" --> " + os.path.basename(unpaired[infile][0]))
+                logging.debug(" --> " + os.path.basename(unpaired[infile][0]))
 
         logging.debug("Paired files were successfully parsed: OK")
         return paired, unpaired
@@ -222,11 +223,11 @@ class getinput(object):
                     logging.warning("Directory '{0:s}' does not contain supported files.".format(inpath))
                     return FileList
             FileList.sort(key=natural_sort)
-            #logging.debug("{0:d} files are provided for the analysis".format(len(FileList)))
-            logging.info("The following files are found in")
-            logging.info("{0:s}:".format(inpath))
+            logging.info("{0:d} files will be analyzed in the current EXONtools pipeline step".format(len(FileList)))
+            logging.debug("The following files are found in")
+            logging.debug("{0:s}:".format(inpath))
             for infile in FileList:
-                logging.info(" --> {0:s}".format(os.path.basename(infile)))
+                logging.debug(" --> {0:s}".format(os.path.basename(infile)))
             getinput.parentdir = inpath
             return FileList
 

@@ -38,7 +38,7 @@ class EXTprogram:
         if args.threads > 1:
             EXTprogram.threads = args.threads
         if args.memory:
-            memory_check(args.memory, minmem=1, maxpercmem=0.85)
+            memory_check(args.memory, minmem=1, maxpercmem=0.95)
             EXTprogram.memory = args.memory
         if args.extra:
             EXTprogram.extra = args.extra

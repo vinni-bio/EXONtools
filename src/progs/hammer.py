@@ -106,6 +106,9 @@ class hammer(EXTprogram):
         # READ QUALITY TESTS
         runqc(rqc, outpath=output.path, message="Corrected reads", gzout=gzoutput)
 
+        if not hammer.keeptmp:
+            tmpdir.delete()
+
 
 def debug():
     """debuger"""
@@ -117,9 +120,9 @@ def savestats(results, outpath):
     """Save all stats"""
     if hammer.stats and not hammer.dryrun:
         statdir = makenewdir(name=os.path.join(outpath, "STATS"), fullname="STATS")
-        logging.info("Read stats will be saved to 'STATS/read_stats.csv'")
+        logging.info("Read stats will be saved to 'STATS/correct_stats.csv'")
         header = ["No", "FILE", "LIBRARY", "#READS", "#TRIMMED", "#CORRECTED"]
-        with open(os.path.join(statdir.path, "read_stats.csv"), 'w') as statfile:
+        with open(os.path.join(statdir.path, "correct_stats.csv"), 'w') as statfile:
             csv_writer = csv.writer(statfile)
             csv_writer.writerow(header)
             counter = 0
@@ -143,14 +146,14 @@ def savestats(results, outpath):
 def runqc(rqc, outpath, message, gzout):
     """Run QC analysis"""
     if rqc and not hammer.stats and not hammer.dryrun:
-        statdir = makenewdir(name=os.path.join(outpath, "STATS"), fullname="STATS")
+        statdir = makenewdir(name=os.path.join(outpath, "STATS"), fullname="STATS").path
     else:
         statdir = os.path.join(outpath, "STATS")
     if rqc and gzout and not hammer.dryrun:
-        rqc_test(outpath, statdir.path, hammer.threads, extension="*.gz", comment=message)
+        rqc_test(outpath, statdir, hammer.threads, extension="*.gz", comment=message)
         debug()
     elif rqc and not hammer.dryrun:
-        rqc_test(outpath, statdir.path, hammer.threads, comment=message)
+        rqc_test(outpath, statdir, hammer.threads, comment=message)
         debug()
     else:
         pass
@@ -192,17 +195,17 @@ def spadespars(torrent, gzoutput):
     """set spades parameters"""
     logging.debug("Setting up SPAdes parameters")
     SPADES_params = '--only-error-correction'
+    if gzoutput:
+        logging.warning("All output FASTQ files will be compressed with gzip")
+    if hammer.extra:
+        logging.warning("The following arguments will be added to 'SPAdes' command line:")
+        logging.warning(hammer.extra)
     if torrent:
         SPADES_params = SPADES_params + " --iontorrent"
         logging.warning("Ion Torrent data type is set for SPAdes")
         logging.info("Correcting sequencing errors with SPAdes IonHammer")
     else:
         logging.info("Correcting sequencing errors with SPAdes BayesHammer")
-    if gzoutput:
-        logging.warning("All output FASTQ files will be compressed with gzip")
-    if hammer.extra:
-        logging.warning("The following arguments will be added to 'SPAdes' command line:")
-        logging.warning(hammer.extra)
     logging.debug("SPAdes parameters: OK")
     return SPADES_params
 

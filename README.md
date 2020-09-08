@@ -293,6 +293,7 @@ cd TEST
 ../../src/EXONtools.py -T 2 -S correct_reads \
 -i STEP_A2_PRECLEAN -o STEP_A3_CORRECT --suffix "_corr"
 
+### STEP A4. Duplication removal (deduplicate_reads)
 
 
 #####################################
@@ -323,6 +324,7 @@ cat ../data/exonseq/POPSET_S92_L004_R2.fastq.gz.a \
 ../../src/EXONtools.py -T 2 -S correct_reads \
 -i STEP_A2_PRECLEAN -o STEP_D3_CORRECT --suffix "_corr"
 
+### STEP D4. Duplication removal (deduplicate_reads)
 
 ```
 

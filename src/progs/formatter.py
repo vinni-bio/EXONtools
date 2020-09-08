@@ -132,10 +132,10 @@ def format_checks(skipcheck, fq2fa, customgrep, pattern, rename, gzout):
 def savestats(results, outpath):
     """Save stats for readformatter"""
     if readformatter.stats and not readformatter.dryrun:
-        statdir = makenewdir(name=os.path.join(output.path, "STATS"), fullname="STATS")
-        logging.info("Read stats will be saved to 'STATS/read_stats.csv'")
+        statdir = makenewdir(name=os.path.join(outpath, "STATS"), fullname="STATS")
+        logging.info("Read stats will be saved to 'STATS/format_stats.csv'")
         header = ["No", "Library", "BARCODE", "#READS", "#FILTERED"]
-        with open(os.path.join(statdir.path, "read_stats.csv"), 'w') as statfile:
+        with open(os.path.join(statdir.path, "format_stats.csv"), 'w') as statfile:
             csv_writer = csv.writer(statfile)
             csv_writer.writerow(header)
             for i, lib in enumerate(sorted(results.keys(), key=natural_sort)):
@@ -147,14 +147,14 @@ def savestats(results, outpath):
 def runqc(rqc, outpath, message, gzout):
     """Run QC analysis"""
     if rqc and not readformatter.stats and not readformatter.dryrun:
-        statdir = makenewdir(name=os.path.join(outpath, "STATS"), fullname="STATS")
+        statdir = makenewdir(name=os.path.join(outpath, "STATS"), fullname="STATS").path
     else:
         statdir = os.path.join(outpath, "STATS")
     if rqc and gzout and not readformatter.dryrun:
-        rqc_test(outpath, statdir.path, readformatter.threads, extension="*.gz", comment=message)
+        rqc_test(outpath, statdir, readformatter.threads, extension="*.gz", comment=message)
         debug()
     elif rqc and not readformatter.dryrun:
-        rqc_test(outpath, statdir.path, readformatter.threads, comment=message)
+        rqc_test(outpath, statdir, readformatter.threads, comment=message)
         debug()
     else:
         pass
@@ -195,7 +195,7 @@ def gzopenfile(outpath, libname, gzout, suffix, fasta, mode):
         return gzip.open(outpath, mode + 't')
     else:
         outpath = os.path.join(outpath, libname + suffix + ext)
-        return gzip.open(outpath, mode)
+        return open(outpath, mode)
 
 
 def validate_reads(inpathR1, inpathR2, outdir, libname, pattern, datout, rename, gzout, skipcheck, fq2fa):
@@ -236,7 +236,7 @@ def validate_reads(inpathR1, inpathR2, outdir, libname, pattern, datout, rename,
         logging.debug("Running checkup analysis on unpaired reads in '{0:s}' library".format(libname.split()[0]))
         infileR1 = SeqIO(inpathR1, fileformat="FASTQ")
         if not readformatter.dryrun:
-            outfileR1 = gzopenfile(outdir, libname, gzout, suffix1, fasta=fq2fa, mode="w")
+            outfileR1 = gzopenfile(outdir, libname,  gzout=gzout, suffix=suffix1, fasta=fq2fa, mode="w")
     else:
         logging.error("No input files provided for FASTQ validation")
         raise EXONtoolsError("FASTQ file validation error")
