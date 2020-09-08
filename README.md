@@ -73,7 +73,7 @@ Every computational task performed in the EXONtools pipeline is considered as an
 
 **Each EXONtools command is executed using the following syntax:**
 ```
-EXONtools.py [general options] COMMAND [command options]
+./EXONtools/src/EXONtools.py [general options] COMMAND [command options]
 ```
 
 The [general options](https://github.com/vinni-bio/EXONtools#exontools-general-options) of the EXONtools pipeline regulate system memory usage, multithreading, debugging modes and the output verbosity, including summary reports with comprehensive statistical information about each procedure. Additionally, the user can adjust some dependency program specific parameters by appending its command line arguments in the EXONtools general options (`--extra`).
@@ -294,7 +294,9 @@ cd TEST
 -i STEP_A2_PRECLEAN -o STEP_A3_CORRECT --suffix "_corr"
 
 ### STEP A4. Duplication removal (deduplicate_reads)
-
+../../src/EXONtools.py -T 2 -S deduplicate_reads \
+-i STEP_A3_CORRECT -o STEP_A4_DEDUPLICATED --suffix "_dedup" \
+--mask 10 10 10 10
 
 #####################################
 ### STAGE D. Processing raw reads ###
@@ -322,9 +324,12 @@ cat ../data/exonseq/POPSET_S92_L004_R2.fastq.gz.a \
 ### This should take some time for multiple libraries
 ### Use more threads to speed up
 ../../src/EXONtools.py -T 2 -S correct_reads \
--i STEP_A2_PRECLEAN -o STEP_D3_CORRECT --suffix "_corr"
+-i STEP_D2_PRECLEAN -o STEP_D3_CORRECT --suffix "_corr"
 
 ### STEP D4. Duplication removal (deduplicate_reads)
+../../src/EXONtools.py -T 2 -S deduplicate_reads \
+-i STEP_D3_CORRECT -o STEP_D4_DEDUPLICATED --suffix "_dedup" \
+--mask 10 10 10 10
 
 ```
 

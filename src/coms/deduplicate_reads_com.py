@@ -9,13 +9,14 @@
 # have been included in the root directory of the EXONtools package.
 
 from mains.EXT_com import EXTcommand
-from progs.annotator import annotator
+# from progs.deduplicatorNEW import deduplicator as deduplicatorNEW
+from progs.deduplicatorOLD import deduplicator 
 
 
 class command(EXTcommand):
-    """This command takes assembly (or multiple assemblies)
-    and annotates its contigs based on provided reference"""
+    """This command finds and removes PCR duplicates in reads"""
 
-    supported_programs = [annotator]
-    default_program = annotator
-    command_name = "annotate_contigs"
+    supported_programs = [deduplicator]
+    default_program = deduplicator
+    command_name = "deduplicate_reads"
+    

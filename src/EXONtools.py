@@ -120,13 +120,28 @@ def main(argv):
     IOoptions.add_argument("-U", "--unpaired", action="store", required=False, help="Path to a single fastq file containing unpaired reads", type=str, metavar="<path>", dest="unpaired")
     miscopts = correct_reads.add_argument_group(title="Miscellaneous command options")
     miscopts.add_argument("--torrent", help="Required for IonTorrent data", action="store_true", default=False, dest="torrent")
-    miscopts.add_argument("--rqc", help="Performs read quality check on formatted files", action="store_true", dest="rqc")
+    miscopts.add_argument("--rqc", help="Performs read quality check on corrected files", action="store_true", dest="rqc")
     miscopts.add_argument("--gzip", help="Compress output files", action="store_true", default=False, dest="gzoutput")
-    miscopts.add_argument("--skip", help="Skip FASTQ format check", action="store_true", dest="skipcheck")
     miscopts.add_argument("--suffix", action="store", help="Ending that will be automatically added to all output file names", type=str, dest="suffix", default="", metavar="<str>")
     miscopts.add_argument("--program", default="hammer", action="store", choices=['hammer'], help="Indicates which program to use for read formatting. Choices are: ['readformatter']", dest="program", metavar="<program name>")
     correct_reads.set_defaults(command=correct_reads_com.command)
 
+    # STEP A4 and D4: find and remove reads with PCR duplicates
+    deduplicate_reads = commands.add_parser("deduplicate_reads", description=deduplicate_reads_help.description, usage="EXONtools.py [general options] deduplicate_reads [command options]", formatter_class=CustomFormatter, epilog=deduplicate_reads_help.epilog)
+    deduplicate_reads._optionals.title = "'deduplicate_reads' command options"
+    IOoptions = deduplicate_reads.add_argument_group(title="Input/Output settings")
+    IOoptions.add_argument("-i", "--in", action="store", help="Path to the directory containing read fastq files (alternative option to R1/R2/U)", type=str, required=False, metavar="<path>", dest="inpath")
+    IOoptions.add_argument("-o", "--out", action="store", help="Path to the output directory", type=str, default="./DEDUPLICATED", metavar="<path>", dest="outdir")
+    IOoptions.add_argument("-R1", "--forward", action="store", required=False, help="Path to a single fastq file containing forward (_R1) paired reads", type=str, metavar="<path>", dest="forward")
+    IOoptions.add_argument("-R2", "--reverse", action="store", required=False, help="Path to a single fastq file containing reverse (_R2) paired reads", type=str, metavar="<path>", dest="reverse")
+    IOoptions.add_argument("-U", "--unpaired", action="store", required=False, help="Path to a single fastq file containing unpaired reads", type=str, metavar="<path>", dest="unpaired")
+    miscopts = deduplicate_reads.add_argument_group(title="Miscellaneous command options")
+    miscopts.add_argument("--mask", help="Bases to mask from start and end positions in R1 and R2 reads when searching for duplicates", action="store", type=int, nargs=4, default=[0,0,0,0], metavar="<int>", dest="skip")
+    miscopts.add_argument("--rqc", help="Performs read quality check on deduplicated files", action="store_true", dest="rqc")
+    miscopts.add_argument("--gzip", help="Compress output files", action="store_true", dest="gzoutput")
+    miscopts.add_argument("--suffix", action="store", help="Ending that will be automatically added to all output file names", type=str, dest="suffix", default="", metavar="<str>")
+    miscopts.add_argument("--program", default="deduplicator", action="store", choices=['deduplicator'], help="Indicates which program to use for read formatting. Choices are: [deduplicatorNEW', 'deduplicatorOLD']", dest="program", metavar="<program name>")
+    deduplicate_reads.set_defaults(command=deduplicate_reads_com.command)
 
 
     # STEPS B1 and E1: reconstruct de novo assemblies

@@ -32,7 +32,7 @@ from utils.rqc import rqc_test
 
 
 class hammer(EXTprogram):
-    """This program finds and fixes sequencing errors within fastq files"""
+    """This program finds and fixes sequencing errors within fastq files using SPAdes"""
 
     name = "hammer"
 

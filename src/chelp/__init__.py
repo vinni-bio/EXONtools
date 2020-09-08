@@ -8,6 +8,7 @@ __all__ = [
     "clean_reads_help",
     "correct_reads_help",
     "consensus_assembly_help",
+    "deduplicate_reads_help",
     "demultiplex_reads_help",
     "evaluate_assembly_help",
     "evaluate_mapping_help",

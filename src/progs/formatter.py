@@ -102,7 +102,7 @@ def format_checks(skipcheck, fq2fa, customgrep, pattern, rename, gzout):
     if gzout:
         logging.warning("All output FASTQ files will be compressed with gzip")
     if readformatter.extra:
-        logging.warning("Extra string argument cannot be used in 'readformatter' program and therefore will be ommited")
+        logging.warning("Extra string argument cannot be used in 'readformatter' program and therefore will be omitted")
     if skipcheck:
         logging.warning("Skipping FASTQ read identifier checkup... Only parsing output will be performed")
     if fq2fa:

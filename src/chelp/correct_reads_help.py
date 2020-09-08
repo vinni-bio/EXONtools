@@ -18,7 +18,7 @@ This command finds and fixes sequencing errors within fastq files
 
 epilog = """
 Provide path to a directory or to a file with FASTQ files (-i). Optionally,
-you can select single paired FASTQ files (-R1, -R2) or single unpaired files (-U).
+you can select single paired FASTQ files (-R1, -R2) or a ingle unpaired files (-U).
 If selecting directory, it will be parsed to identify paired files automatically.
 Currently, the following file extensions are supported for cleanup analysis:
 ['fastq','fq','fastq.gz','fq.gz'].
