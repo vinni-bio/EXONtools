@@ -137,6 +137,7 @@ def main(argv):
     IOoptions.add_argument("-U", "--unpaired", action="store", required=False, help="Path to a single fastq file containing unpaired reads", type=str, metavar="<path>", dest="unpaired")
     miscopts = deduplicate_reads.add_argument_group(title="Miscellaneous command options")
     miscopts.add_argument("--mask", help="Bases to mask from start and end positions in R1 and R2 reads when searching for duplicates", action="store", type=int, nargs=4, default=[0,0,0,0], metavar="<int>", dest="skip")
+    miscopts.add_argument("--phred", help="Phred score type in read quality line. Choices are: 33 and 64.", action="store", type=int, default=33, choices=[33,64], metavar="<int>", dest="phred")
     miscopts.add_argument("--rqc", help="Performs read quality check on deduplicated files", action="store_true", dest="rqc")
     miscopts.add_argument("--gzip", help="Compress output files", action="store_true", dest="gzoutput")
     miscopts.add_argument("--suffix", action="store", help="Ending that will be automatically added to all output file names", type=str, dest="suffix", default="", metavar="<str>")

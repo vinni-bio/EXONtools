@@ -238,7 +238,7 @@ def writeindexread(outpath, libname, read, suffix, gzout):
     """Write read by index"""
     file_name = os.path.join(outpath, libname + suffix + ".fq")
     outfile = opengzfile(file_name, gzout)
-    outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, read.extra, read.seq, read.info, read.qual))
+    outfile.write("@{0}\n{1}\n+{2}\n{3}\n".format(read.identifier, read.seq, read.info, read.qual))
     outfile.close()
 
 
@@ -246,13 +246,13 @@ def writebacrread(outpath, libname, barcode, read, suffix, trim, gzout):
     """Write read by barcode"""
     readseq = read.seq[len(barcode) + trim:]
     qualseq = read.qual[len(barcode) + trim:]
-    if read.extra.endswith(':'):
-        extrapart = read.extra + barcode
+    if read.identifier.endswith(':'):
+        identifier = rread.identifier + barcode
     else:
-        extrapart = read.extra
+        identifier = read.identifier
     file_name = os.path.join(outpath, libname + suffix + ".fq")
     outfile = opengzfile(file_name, gzout)
-    outfile.write("@{0} {1}\n{2}\n+{3}\n{4}\n".format(read.name, extrapart, readseq, read.info, qualseq))
+    outfile.write("@{0}\n{1}\n+{2}\n{3}\n".format(identifier, readseq, read.info, qualseq))
     outfile.close()
 
 

@@ -227,13 +227,15 @@ def makeinfiles(lib, paired, unpaired):
 
 def parsejobs(jobs):
     """Convert jobs from list to dictionary"""
-    job_collector = {}
-    if jobs:
-        for result in jobs:
-            job_collector.update(result)
-    else:
+    if not jobs:
         logging.error("Multiprocessing produced no results")
         raise EXONtoolsError("Multiprocessing error")
+    job_collector = {}
+    for result in jobs:
+        if result:
+            job_collector.update(result)
+    if not job_collector:
+        logging.warning("Multiprocessing produced no results")
     return job_collector
 
 
@@ -274,11 +276,11 @@ def check_spades_output(infile):
 
 def make_outpath(sample, direction, infile, outdir, suffix):
     """Make outpath for spades output file"""
-    if direction == 'forward' or direction == 'reverse':
-        outfile_name = os.path.basename(infile).split(".")[0] + suffix + ".fq"
-        outfilepath = os.path.join(outdir, outfile_name)
+    if direction == 'forward':
+        outfilepath = os.path.join(outdir, sample + "_R1_paired" + suffix + ".fq")
+    elif direction == 'reverse':
+         outfilepath = os.path.join(outdir, sample + "_R2_paired" + suffix + ".fq")
     else:
-        outfile_name = os.path.basename(infile).split(".")[0] + suffix + ".fq"
         outfilepath = os.path.join(outdir, sample + "_unpaired" + suffix + ".fq")
     logging.debug("Made output path for '{0:s}' library: OK".format(sample))
     return outfilepath
@@ -319,7 +321,7 @@ def process_stats(inpathlist, outpath, sample, suffix, gzoutput):
             if "changed" in read.info:
                 changed_data = int(read.info.split("changed:")[-1].split(" ")[0])
                 stats[sample][direction]["changed"] = stats[sample][direction]["changed"] + changed_data
-            writefile(outfile, read.name, read.seq, read.qual)
+            writefile(outfile, read.identifier, read.seq, read.qual)
         stats[sample][direction]['counts'] = stats[sample][direction]['counts'] + infile.total
         outfile.close()
         logging.debug("SPAdes output for '{0:s}' library: OK".format(sample))
