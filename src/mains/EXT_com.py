@@ -34,7 +34,8 @@ class EXTcommand:
             if prog.name == program:
                 logging.debug("The program '{}' was selected for running the analysis".format(prog.name))
                 return prog(self.args)
-        return self.default_program()
+        logging.debug("The DEFAULT program '{}' was selected for running the analysis".format(prog.name))
+        return self.default_program(self.args)
 
     def execute_command(self):
         """Executes the command.

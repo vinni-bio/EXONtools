@@ -141,7 +141,7 @@ def main(argv):
     miscopts.add_argument("--rqc", help="Performs read quality check on deduplicated files", action="store_true", dest="rqc")
     miscopts.add_argument("--gzip", help="Compress output files", action="store_true", dest="gzoutput")
     miscopts.add_argument("--suffix", action="store", help="Ending that will be automatically added to all output file names", type=str, dest="suffix", default="", metavar="<str>")
-    miscopts.add_argument("--program", default="deduplicator", action="store", choices=['deduplicator'], help="Indicates which program to use for read formatting. Choices are: [deduplicatorNEW', 'deduplicatorOLD']", dest="program", metavar="<program name>")
+    miscopts.add_argument("--program", default="deduplicatorNEW", action="store", choices=['deduplicatorNEW','deduplicatorOLD'], help="Indicates which program to use for read formatting. Choices are: [deduplicatorNEW', 'deduplicatorOLD']", dest="program", metavar="<program name>")
     deduplicate_reads.set_defaults(command=deduplicate_reads_com.command)
 
 

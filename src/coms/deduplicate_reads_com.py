@@ -8,15 +8,16 @@
 # by its license. Please see the LICENSE.txt file that should
 # have been included in the root directory of the EXONtools package.
 
+
 from mains.EXT_com import EXTcommand
-# from progs.deduplicatorNEW import deduplicator as deduplicatorNEW
-from progs.deduplicatorOLD import deduplicator 
+from progs.deduplicatorNEW import deduplicator as deduplicatorNEW
+from progs.deduplicatorOLD import deduplicator as deduplicatorOLD
 
 
 class command(EXTcommand):
     """This command finds and removes PCR duplicates in reads"""
 
-    supported_programs = [deduplicator]
-    default_program = deduplicator
+    supported_programs = [deduplicatorNEW, deduplicatorOLD]
+    default_program = deduplicatorNEW
     command_name = "deduplicate_reads"
     

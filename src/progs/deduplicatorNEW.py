@@ -18,6 +18,7 @@ import pdb
 import gzip
 import sys
 import shutil
+import subprocess
 
 from mains.EXT_prog import EXTprogram
 from mains.EXT_IO import getinput, parseinput, output, makenewdir
@@ -33,17 +34,408 @@ from utils.rqc import rqc_test
 
 class deduplicator(EXTprogram):
     """This command finds and removes reads with PCR duplicates in fastq files leaving
-	   just one read with the highest sequencing quality or largest size.
-	   PCR duplicates are recognized as identical sequences
-	"""
+       just one read with the highest sequencing quality or largest size.
+       PCR duplicates are recognized as identical sequences
+    """
 
-    name = "deduplicator"
+    name = "deduplicatorNEW"
 
     def execute_program(self):
         args = self.args
-        self.deduplicate(args.inpath, args.forward, args.reverse, args.unpaired, args.outdir, args.gzoutput, args.skip, args.rqc)
+        self.deduplicate(args.inpath, args.forward, args.reverse, args.unpaired, args.outdir, args.gzoutput, args.skip, args.phred, args.rqc)
 
-    def deduplicate(self, inpath, forward, reverse, unpaired_in, outdir, gzoutput, skip, rqc):
+    def deduplicate(self, inpath, forward, reverse, unpaired_in, outdir, gzoutput, skip, phred, rqc):
 
         debug()
 
+        # SET DRY RUN AND DEBUGGING MODES FOR SUBCLASSES
+        deduplicator.run_dry(SeqIO, getinput, output, makenewdir, executor)
+        deduplicator.set_debug(executor)
+        if rqc:
+            executor.setconfig("fastqc", "multiqc")
+
+        # IO SETTINGS
+        paired, unpaired = fixunpaired(inpath, forward, reverse, unpaired_in)
+        librs = findlibrs(paired, unpaired)
+        output(outdir)
+        dupldir = makenewdir(name="DUPLICATES", fullname="DUPLICATES")
+        logging.info("All duplicates will be saved in 'DUPLICATES' directory")
+        tmpdir = makenewdir(name="tmp", fullname="temporary")
+        logging.debug("IO settings: OK")
+        debug()
+
+        # SET DEDUP PARAMETERS
+        deduppars(skip, gzoutput)
+        debug()
+ 
+        # RUN DEDUPLICATION        
+        TASKS = []
+        if paired:
+            trunc = truncreads(skip,True)
+            for lib in sorted(paired.keys(), key=natural_sort):
+                TASKS.append(worker(dedup_paired, [lib, tmpdir.path, trunc, gzoutput, deduplicator.suffix, paired[lib][0], paired[lib][1],phred]))
+        if unpaired:
+            trunc = truncreads(skip,False)
+            for lib in sorted(unpaired.keys(), key=natural_sort):
+                TASKS.append(worker(dedup_unpaired, [lib, tmpdir.path, trunc, gzoutput, deduplicator.suffix, unpaired[lib][0],phred]))
+
+        results = runtask(TASKS, "Deduplicator")
+        logging.debug("Deduplication analysis succesfully finished: OK")
+        debug()
+
+        # # SAVE STATS
+        # savestats(results, output.path)
+
+        # # READ QUALITY TESTS
+        # runqc(rqc, outpath=output.path, message="Deduplicated reads", gzout=gzoutput)
+
+        # if not deduplicator.keeptmp:
+        #     tmpdir.delete()
+
+
+def runtask(TASKS, message):
+    """Run tasks"""
+    if TASKS:
+        processes_requested = set_threads(message, len(TASKS), deduplicator.threads)
+        pool = create_pool(processes_requested)
+        jobs = hard_worker(run_instance, TASKS, pool)
+        close_pool(pool)
+        logging.debug("TASKs running process: OK")
+        return parsejobs(jobs)
+
+
+def parsejobs(jobs):
+    """Convert jobs from list to dictionary"""
+    if not jobs:
+        logging.error("Multiprocessing produced no results")
+        raise EXONtoolsError("Multiprocessing error")
+    job_collector = {}
+    for result in jobs:
+        if result:
+            job_collector.update(result)
+    if not job_collector:
+        logging.warning("Multiprocessing produced no results")
+    return job_collector
+
+
+def meanphred(inline, phred = 33):
+    """Calculate mean phred score for input quality line"""
+    try:
+        phredstr = [ord(x)- phred for x in inline]
+        return sum(phredstr)*100//len(phredstr)
+    except ZeroDivisionError:
+        logging.error("No quality line is provided for PHRED conversion")
+        raise EXONtoolsError
+
+
+def external_sort(tmpfile):
+    """Use bash sort function"""
+    list_dup = subprocess.Popen("cat "+tmpfile+" | sort -k1,1r -k2nr -T " + os.path.dirname(tmpfile) +" | awk '{if (NR>1 && length($1)>length(f) && index($1,f)>0) {print name} else if (NR>1 && length($1)==length(f) && (index($1,f)>0)) {print $3}} {f=$1} {name =$3}'", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    (results,err) = list_dup.communicate()
+    if err != '':
+        logging.error("EXONtools ERROR (subprocess failed)")
+        logging.error(err)
+        raise EXONtoolsError
+    results = results.split()
+    duplicates = [int(x.replace("READ","")) for x in results]
+    duplicates.sort()
+    return duplicates
+
+        
+def opengzfile(inpath, gzout=False, mode='w'):
+    if gzout:
+        return gzip.open(inpath + ".gz", mode + 't')
+    else:
+        return open(inpath, mode)
+
+
+def sortinlist(inlist, indir, sample, COUNTER):
+    if inlist:
+        inlist.sort(key=lambda x: (x[0], -x[1]))
+        outpath = os.path.join(indir,sample+"_"+str(COUNTER)+".out")
+        with open(outpath,'w') as outfile:
+            for l in inlist:
+                outfile.write("{0:s} {1:d} READ{2:d}\n".format(l[0],l[1],l[2]))
+
+
+def merger(tmpfilelist, inpath, sample):
+    """Merge sorted files"""
+    check = len(tmpfilelist)
+    if check > 1:   
+        mid = check // 2
+        L = tmpfilelist[:mid]
+        R = tmpfilelist[mid:]
+        inpathL = merger(L, inpath, sample)
+        inpathR = merger(R, inpath, sample)
+        outpath = os.path.join(inpath, os.path.splitext(inpathL)[0] + inpathR.split("_")[-1])
+        with open(os.path.join(inpath,inpathL)) as infile1, open(os.path.join(inpath,inpathR)) as infile2, open(outpath,'w') as outfile:
+            line1 = infile1.readline().strip()
+            line2 = infile2.readline().strip()
+            while(line1 and line2):
+                check1 = line1.split(" ")
+                check2 = line2.split(" ")
+                if check2[0] > check1[0]:
+                    outfile.write(line1+"\n")
+                    line1 = infile1.readline().strip()
+                elif check2[0] == check1[0] and int(check1[1]) > int(check2[1]):
+                        outfile.write(line1+"\n")
+                        line1 = infile1.readline().strip()                    
+                else:
+                    outfile.write(line2+"\n")
+                    line2 = infile2.readline().strip()
+            while(line1):
+                outfile.write(line1+"\n")
+                line1 = infile1.readline().strip()
+            while(line2):
+                outfile.write(line2+"\n")
+                line2 = infile2.readline().strip()
+        os.remove(os.path.join(inpath,inpathL))
+        os.remove(os.path.join(inpath,inpathR))
+        return os.path.basename(outpath)
+    else:
+        return os.path.basename(tmpfilelist[0]) 
+
+
+def findupls(inpath):
+    """Find duplicates in sorted file"""
+    check = (" ", 0, " ")
+    duplicates = []
+    with open(inpath, "r") as infile:
+        for line in infile:
+            arline = line.strip().split(" ")
+            if arline[0] == check[0]:
+                duplicates.append(int(arline[2].replace("READ","")))
+            elif check[0] in line[0]:
+                duplicates.append(int(check[2].replace("READ","")))
+            else:
+                pass
+            check = tuple(arline)
+    duplicates.sort()
+    return duplicates
+
+
+def dedup_paired(sample, tmppath, skip, gzoutput, suffix, inpathR1, inpathR2, phred=33):
+    """DEDUPLICATE PAIRED FILES"""
+
+    logging.info("Deduplicating paired reads for '{0:s}' library".format(sample))
+    libdir = os.path.join(tmppath,sample+"_tmp")
+    os.mkdir(libdir)
+    infile1 = SeqIO(inpathR1,fileformat="FASTQ")
+    infile2 = SeqIO(inpathR2,fileformat="FASTQ")
+
+    CHECK = 10000; COUNTER = 1; INLIST = []
+    for read1,read2 in zip(infile1.read(),infile2.read()):    
+        if infile1.total <= CHECK:
+            INLIST.append((read1.seq[skip[0]:skip[1]]+read2.seq[skip[2]:skip[3]],
+                meanphred(read1.qual[skip[0]:skip[1]]+read2.qual[skip[2]:skip[3]],phred=phred),
+                infile1.total))
+        else:
+            sortinlist(INLIST,libdir,sample,COUNTER)
+            CHECK +=10000; COUNTER +=1; INLIST = []
+    if INLIST:
+        sortinlist(INLIST,libdir,sample,COUNTER)
+
+    tmpfilelist = [os.path.join(libdir,f) for f in os.listdir(libdir) if f.endswith('.out')]
+    resultpath = merger(tmpfilelist,libdir,sample)
+
+    duplicates = findupls(os.path.join(libdir,resultpath))
+
+    print(sample,duplicates)
+
+
+    # # FIND DUPLICATES FROM TEMPORARY FILE
+    # duplicates = external_sort(outpath)
+    # NDUPS= len(duplicates)
+    # logging.info("{0:d} duplicates are found in '{1:s}' library".format(NDUPS,sample))
+
+    # # REMOVE TEMPORARY FILE
+    # os.remove(outpath)
+
+    # # SAVE RESULTS
+    # outdir = os.path.dirname(tmppath)
+    # dupldir = os.path.join(outdir,"DUPLICATES")
+    # ndup = 0
+
+    # with open(os.path.join(dupldir,sample+"_duplicates.dat"), 'w') as duplfile:
+    #     outpath1 = os.path.join(outdir,sample+"_R1"+suffix+".fq")
+    #     outpath2 = os.path.join(outdir,sample+"_R2"+suffix+".fq")
+    #     outfile1 = opengzfile(outpath1,gzout=gzoutput)
+    #     outfile2 = opengzfile(outpath2,gzout=gzoutput)
+    #     infile1 = SeqIO(inpathR1,fileformat="FASTQ")
+    #     infile2 = SeqIO(inpathR2,fileformat="FASTQ")
+    #     for read1,read2 in zip(infile1.read(),infile2.read()):
+    #         if ndup < NDUPS and infile1.total == duplicates[ndup]:
+    #             duplfile.write(read1.name+'\n')
+    #             ndup +=1
+    #         else:
+    #             outfile1.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read1.identifier,read1.seq,read1.qual))
+    #             outfile2.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read2.identifier,read2.seq,read2.qual))
+    #     return {sample: [infile1.total,NDUPS,[os.path.basename(outpath1), os.path.basename(outpath2)]]}
+
+
+
+def dedup_unpaired(sample, tmppath, skip, gzoutput, suffix, inpathR1, phred=33):
+    """DEDUPLICATE UNPAIRED FILE"""
+
+    logging.info("Deduplicating unpaired reads for '{0:s}' library".format(sample))
+    libdir = os.path.join(tmppath,sample+"_tmp")
+    os.mkdir(libdir)
+    infile1 = SeqIO(inpathR1,fileformat="FASTQ")
+
+    CHECK = 10000; COUNTER = 1; INLIST = []
+    for read1 in infile1.read():    
+        if infile1.total <= CHECK:
+            INLIST.append((read1.seq[skip[0]:skip[1]],
+                meanphred(read1.qual[skip[0]:skip[1]],phred=phred),
+                infile1.total))
+        else:
+            sortinlist(INLIST,libdir,sample,COUNTER)
+            CHECK +=10000; COUNTER +=1; INLIST = []
+    if INLIST:
+        sortinlist(INLIST,libdir,sample,COUNTER)
+
+    tmpfilelist = [os.path.join(libdir,f) for f in os.listdir(libdir) if f.endswith('.out')]
+    resultpath = merger(tmpfilelist,libdir,sample)
+    duplicates = findupls(os.path.join(libdir,resultpath))
+
+    print(sample,duplicates)
+
+
+    # # FIND DUPLICATES FROM TEMPORARY FILE
+    # duplicates = external_sort(outpath)
+    # NDUPS= len(duplicates)
+    # logging.info("{0:d} duplicates are found in '{1:s}' library".format(NDUPS,sample))
+
+    # # REMOVE TEMPORARY FILE
+    # os.remove(outpath)
+
+    # # SAVE RESULTS
+    # outdir = os.path.dirname(tmppath)
+    # dupldir = os.path.join(outdir,"DUPLICATES")
+    # ndup = 0
+
+    # with open(os.path.join(dupldir,sample+"_duplicates.dat"), 'w') as duplfile:
+    #     outpath1 = os.path.join(outdir,sample+suffix+".fq")
+    #     outfile1 = opengzfile(outpath1,gzout=gzoutput)
+    #     infile1 = SeqIO(inpathR1,fileformat="FASTQ")
+    #     for read1 in infile1.read():
+    #         if ndup < NDUPS and infile1.total == duplicates[ndup]:
+    #             duplfile.write(read1.name+'\n')
+    #             ndup +=1
+    #         else:
+    #             outfile1.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read1.identifier,read1.seq,read1.qual))
+    #     return {sample: [infile1.total,NDUPS,[os.path.basename(outpath1)]]}
+
+
+def debug():
+    """debuger"""
+    if deduplicator.debug:
+        pdb.set_trace()
+
+
+def savestats(results, outpath):
+    """Save all stats"""
+    if deduplicator.stats and not deduplicator.dryrun:
+        statdir = makenewdir(name=os.path.join(outpath, "STATS"), fullname="STATS")
+        logging.info("Read stats will be saved to 'STATS/deduplicate_stats.csv'")
+        header = ["No", "FILE","LIBRARY", "#INITIAL_READS", "#DUPLICATES",  "#PERCENTAGE", "#FINAL_READS"]
+        with open(os.path.join(statdir.path, "deduplicate_stats.csv"), 'w') as statfile:
+            csv_writer = csv.writer(statfile)
+            csv_writer.writerow(header)
+            i=0
+            for lib in sorted(results.keys(), key=natural_sort):
+                for f in results[lib][2]:
+                    i +=1
+                    csv_writer.writerow([
+                        i,
+                        f,
+                        lib,
+                        results[lib][0],
+                        results[lib][1],
+                        round(results[lib][1]/results[lib][0]*100,2),
+                        results[lib][0] - results[lib][1]
+                    ])
+        logging.debug("Read stats were successfully written to the file: OK")
+        debug()
+        return statdir
+
+
+def deduppars(skip, gzoutput):
+    """set dedup parameters"""
+    logging.debug("Setting up DEDUP parameters")
+    if deduplicator.extra:
+        logging.warning("Extra string argument cannot be used in 'deduplicator' program and therefore will be omitted")
+    if gzoutput:
+        logging.warning("All output FASTQ files will be compressed with gzip")
+    direction = ['forward' , 'forward', 'reverse', 'reverse']
+    for i,x in enumerate(skip):
+        if x != 0:
+            logging.info("The first {0:d} bases will be masked in {1:s} reads".format(x,direction[i]))
+    logging.debug("DEDUP parameters: OK")
+
+
+def runqc(rqc, outpath, message, gzout):
+    """Run QC analysis"""
+    if rqc and not deduplicator.stats and not deduplicator.dryrun:
+        statdir = makenewdir(name=os.path.join(outpath, "STATS"), fullname="STATS").path
+    else:
+        statdir = os.path.join(outpath, "STATS")
+    if rqc and gzout and not deduplicator.dryrun:
+        rqc_test(outpath, statdir, deduplicator.threads, extension="*.gz", comment=message)
+        debug()
+    elif rqc and not deduplicator.dryrun:
+        rqc_test(outpath, statdir, deduplicator.threads, comment=message)
+        debug()
+    else:
+        pass
+
+
+def findlibrs(paired, unpaired):
+    """Parse IO to find librs"""
+    librs = list(set([x.split("_")[0] for x in list(paired.keys()) + list(unpaired.keys())]))
+    librs.sort(key=natural_sort)
+    return librs
+
+
+def fixunpaired(inpath, forward, reverse, unpaired):
+    """parse input files"""
+    logging.debug("Parsing input files")
+    getinput.format(['.fq', '.fastq', '.fastq.gz', '.fq.gz'])
+    paired, newunpaired = parseinput(inpath, forward, reverse)
+    if unpaired and not inpath:
+        newunpaired = {os.path.basename(unpaired).split("_")[0].split(".")[0] + "_unpaired": getinput(unpaired).files}
+        logging.debug("Input file parsing: OK")
+        return paired, newunpaired
+    elif unpaired and inpath:
+        logging.error("Input arguments '-i' and '-U' cannot be used simultaneously")
+        raise EXONtoolsError("Input path error")
+    else:
+        logging.debug("Input file parsing: OK")
+        return paired, newunpaired
+
+
+def count_reads(inpath):
+    """Count reads by number of lines"""
+    logging.debug("Count reads by line")
+    infileseq = SeqIO(inpath, fileformat="FASTQ")
+    infileseq.totalcount(lines=True)
+    if infileseq.total % 4 != 0:
+        logging.error("FASTQ format error. Please check your input file.")
+        raise EXONtoolsError("Wrong fastq format")
+    logging.debug("Count reads by line: OK")
+    return infileseq.total // 4
+
+
+def truncreads(skip, pair=False):
+    """skip conformation"""
+    trunc = skip[:]
+    logging.debug("Changing skip vector")
+    for i, x in enumerate(trunc):
+        if x == 0:
+            trunc[i] = None
+        elif i > 1 and not pair:
+            trunc[i] = None
+        elif i % 2 == 1:
+            trunc[i] = -x
+    logging.debug("Changing skip vector: OK")
+    return trunc

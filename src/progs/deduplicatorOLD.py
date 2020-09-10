@@ -38,7 +38,7 @@ class deduplicator(EXTprogram):
        PCR duplicates are recognized as identical sequences
     """
 
-    name = "deduplicator"
+    name = "deduplicatorOLD"
 
     def execute_program(self):
         args = self.args
@@ -59,6 +59,7 @@ class deduplicator(EXTprogram):
         librs = findlibrs(paired, unpaired)
         output(outdir)
         dupldir = makenewdir(name="DUPLICATES", fullname="DUPLICATES")
+        logging.info("All duplicates will be saved in 'DUPLICATES' directory")
         tmpdir = makenewdir(name="tmp", fullname="temporary")
         logging.debug("IO settings: OK")
         debug()
@@ -72,11 +73,11 @@ class deduplicator(EXTprogram):
         if paired:
             trunc = truncreads(skip,True)
             for lib in sorted(paired.keys(), key=natural_sort):
-                TASKS.append(worker(dedup, [lib, tmpdir.path, trunc, gzoutput, deduplicator.suffix, paired[lib][0], paired[lib][1],phred]))
+                TASKS.append(worker(dedup_paired, [lib, tmpdir.path, trunc, gzoutput, deduplicator.suffix, paired[lib][0], paired[lib][1],phred]))
         if unpaired:
             trunc = truncreads(skip,False)
             for lib in sorted(unpaired.keys(), key=natural_sort):
-                TASKS.append(worker(dedup, [lib, tmpdir.path, trunc, gzoutput, deduplicator.suffix, unpaired[lib][0],None,phred]))
+                TASKS.append(worker(dedup_unpaired, [lib, tmpdir.path, trunc, gzoutput, deduplicator.suffix, unpaired[lib][0],phred]))
 
         results = runtask(TASKS, "Deduplicator")
         logging.debug("Deduplication analysis succesfully finished: OK")
@@ -136,7 +137,7 @@ def external_sort(tmpfile):
         logging.error(err)
         raise EXONtoolsError
     results = results.split()
-    duplicates = [int(x.replace("LINE","")) for x in results]
+    duplicates = [int(x.replace("READ","")) for x in results]
     duplicates.sort()
     return duplicates
 
@@ -148,31 +149,64 @@ def opengzfile(inpath, gzout=False, mode='w'):
         return open(inpath, mode)
 
 
-def dedup(sample, tmppath, skip, gzoutput, suffix, inpathR1, inpathR2=None, phred=33):
-    """DEDUPLICATION"""
+def dedup_paired(sample, tmppath, skip, gzoutput, suffix, inpathR1, inpathR2, phred=33):
+    """DEDUPLICATE PAIRED FILES"""
 
-    # MAKE TEMP FILE
-    if inpathR2:
-        logging.info("Deduplicating paired reads for '{0:s}' library".format(sample))
-        outpath = os.path.join(tmppath,sample+"_paired.out")
+    logging.info("Deduplicating paired reads for '{0:s}' library".format(sample))
+    outpath = os.path.join(tmppath,sample+"_paired.out")
+    infile1 = SeqIO(inpathR1,fileformat="FASTQ")
+    infile2 = SeqIO(inpathR2,fileformat="FASTQ")
+    with open(outpath,'w') as outfile:
+        for read1,read2 in zip(infile1.read(),infile2.read()):
+            outfile.write("{0:s} {1:d} READ{2:d}\n".format(
+                read1.seq[skip[0]:skip[1]]+read2.seq[skip[2]:skip[3]],
+                meanphred(read1.qual[skip[0]:skip[1]]+read2.qual[skip[2]:skip[3]],phred=phred),
+                infile1.total))
+
+    # FIND DUPLICATES FROM TEMPORARY FILE
+    duplicates = external_sort(outpath)
+    print(sample, duplicates)
+    NDUPS= len(duplicates)
+    logging.info("{0:d} duplicates are found in '{1:s}' library".format(NDUPS,sample))
+
+    # REMOVE TEMPORARY FILE
+    os.remove(outpath)
+
+    # SAVE RESULTS
+    outdir = os.path.dirname(tmppath)
+    dupldir = os.path.join(outdir,"DUPLICATES")
+    ndup = 0
+
+    with open(os.path.join(dupldir,sample+"_duplicates.dat"), 'w') as duplfile:
+        outpath1 = os.path.join(outdir,sample+"_R1"+suffix+".fq")
+        outpath2 = os.path.join(outdir,sample+"_R2"+suffix+".fq")
+        outfile1 = opengzfile(outpath1,gzout=gzoutput)
+        outfile2 = opengzfile(outpath2,gzout=gzoutput)
         infile1 = SeqIO(inpathR1,fileformat="FASTQ")
         infile2 = SeqIO(inpathR2,fileformat="FASTQ")
-        with open(outpath,'w') as outfile:
-            for read1,read2 in zip(infile1.read(),infile2.read()):
-                outfile.write("{0:s} {1:d} LINE{2:d}\n".format(
-                    read1.seq[skip[0]:skip[1]]+read2.seq[skip[2]:skip[3]],
-                    meanphred(read1.qual[skip[0]:skip[1]]+read2.qual[skip[2]:skip[3]],phred=phred),
-                    infile1.total))
-    else:
-        logging.info("Deduplicating unpaired reads for '{0:s}' library".format(sample))
-        outpath = os.path.join(tmppath,sample+"_unpaired.out")
-        infile1 = SeqIO(inpathR1,fileformat="FASTQ")
-        with open(outpath,'w') as outfile:
-            for read1 in infile1.read():
-                outfile.write("{0:s} {1:d} LINE{2:d}\n".format(
-                    read1.seq[skip[0]:skip[1]],
-                    meanphred(read1.qual[skip[0]:skip[1]],phred=phred),
-                    infile1.total))
+        for read1,read2 in zip(infile1.read(),infile2.read()):
+            if ndup < NDUPS and infile1.total == duplicates[ndup]:
+                duplfile.write(read1.name+'\n')
+                ndup +=1
+            else:
+                outfile1.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read1.identifier,read1.seq,read1.qual))
+                outfile2.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read2.identifier,read2.seq,read2.qual))
+        return {sample: [infile1.total,NDUPS,[os.path.basename(outpath1), os.path.basename(outpath2)]]}
+
+
+
+def dedup_unpaired(sample, tmppath, skip, gzoutput, suffix, inpathR1, phred=33):
+    """DEDUPLICATE UNPAIRED FILE"""
+
+    logging.info("Deduplicating unpaired reads for '{0:s}' library".format(sample))
+    outpath = os.path.join(tmppath,sample+"_unpaired.out")
+    infile1 = SeqIO(inpathR1,fileformat="FASTQ")
+    with open(outpath,'w') as outfile:
+        for read1 in infile1.read():
+            outfile.write("{0:s} {1:d} READ{2:d}\n".format(
+                read1.seq[skip[0]:skip[1]],
+                meanphred(read1.qual[skip[0]:skip[1]],phred=phred),
+                infile1.total))
      
     # FIND DUPLICATES FROM TEMPORARY FILE
     duplicates = external_sort(outpath)
@@ -186,34 +220,18 @@ def dedup(sample, tmppath, skip, gzoutput, suffix, inpathR1, inpathR2=None, phre
     outdir = os.path.dirname(tmppath)
     dupldir = os.path.join(outdir,"DUPLICATES")
     ndup = 0
-    if inpathR2:
-        with open(os.path.join(dupldir,sample+"_duplicates.dat"), 'w') as duplfile:
-            outpath1 = os.path.join(outdir,sample+"_R1"+suffix+".fq")
-            outpath2 = os.path.join(outdir,sample+"_R2"+suffix+".fq")
-            outfile1 = opengzfile(outpath1,gzout=gzoutput)
-            outfile2 = opengzfile(outpath2,gzout=gzoutput)
-            infile1 = SeqIO(inpathR1,fileformat="FASTQ")
-            infile2 = SeqIO(inpathR2,fileformat="FASTQ")
-            for read1,read2 in zip(infile1.read(),infile2.read()):
-                if ndup < NDUPS and infile1.total == duplicates[ndup]:
-                    duplfile.write(read1.name+'\n')
-                    ndup +=1
-                else:
-                    outfile1.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read1.identifier,read1.seq,read1.qual))
-                    outfile2.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read2.identifier,read2.seq,read2.qual))
-            return {sample: [infile1.total,NDUPS]}
-    else:
-        with open(os.path.join(dupldir,sample+"_duplicates.dat"), 'w') as duplfile:
-            outpath1 = os.path.join(outdir,sample+suffix+".fq")
-            outfile1 = opengzfile(outpath1,gzout=gzoutput)
-            infile1 = SeqIO(inpathR1,fileformat="FASTQ")
-            for read1 in infile1.read():
-                if ndup < NDUPS and infile1.total == duplicates[ndup]:
-                    duplfile.write(read1.name+'\n')
-                    ndup +=1
-                else:
-                    outfile1.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read1.identifier,read1.seq,read1.qual))
-            return {sample: [infile1.total,NDUPS]}
+
+    with open(os.path.join(dupldir,sample+"_duplicates.dat"), 'w') as duplfile:
+        outpath1 = os.path.join(outdir,sample+suffix+".fq")
+        outfile1 = opengzfile(outpath1,gzout=gzoutput)
+        infile1 = SeqIO(inpathR1,fileformat="FASTQ")
+        for read1 in infile1.read():
+            if ndup < NDUPS and infile1.total == duplicates[ndup]:
+                duplfile.write(read1.name+'\n')
+                ndup +=1
+            else:
+                outfile1.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read1.identifier,read1.seq,read1.qual))
+        return {sample: [infile1.total,NDUPS,[os.path.basename(outpath1)]]}
 
 
 def debug():
@@ -227,19 +245,23 @@ def savestats(results, outpath):
     if deduplicator.stats and not deduplicator.dryrun:
         statdir = makenewdir(name=os.path.join(outpath, "STATS"), fullname="STATS")
         logging.info("Read stats will be saved to 'STATS/deduplicate_stats.csv'")
-        header = ["No", "LIBRARY", "#INITIAL_READS", "#DUPLICATES",  "#PERCENTAGE", "#FINAL_READS"]
+        header = ["No", "FILE","LIBRARY", "#INITIAL_READS", "#DUPLICATES",  "#PERCENTAGE", "#FINAL_READS"]
         with open(os.path.join(statdir.path, "deduplicate_stats.csv"), 'w') as statfile:
             csv_writer = csv.writer(statfile)
             csv_writer.writerow(header)
-            for i, lib in enumerate(sorted(results.keys(), key=natural_sort)):
-                csv_writer.writerow([
-                    i,
-                    lib,
-                    results[lib][0],
-                    results[lib][1],
-                    round(results[lib][1]/results[lib][0]*100,2),
-                    results[lib][0] - results[lib][1]
-                ])
+            i=0
+            for lib in sorted(results.keys(), key=natural_sort):
+                for f in results[lib][2]:
+                    i +=1
+                    csv_writer.writerow([
+                        i,
+                        f,
+                        lib,
+                        results[lib][0],
+                        results[lib][1],
+                        round(results[lib][1]/results[lib][0]*100,2),
+                        results[lib][0] - results[lib][1]
+                    ])
         logging.debug("Read stats were successfully written to the file: OK")
         debug()
         return statdir
@@ -255,7 +277,7 @@ def deduppars(skip, gzoutput):
     direction = ['forward' , 'forward', 'reverse', 'reverse']
     for i,x in enumerate(skip):
         if x != 0:
-            logging.info("The first {0:s} bases will be masked in {1:s} reads".format(x,direction[i]))
+            logging.info("The first {0:d} bases will be masked in {1:s} reads".format(x,direction[i]))
     logging.debug("DEDUP parameters: OK")
 
 
