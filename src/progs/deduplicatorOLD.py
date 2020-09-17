@@ -156,43 +156,45 @@ def dedup_paired(sample, tmppath, skip, gzoutput, suffix, inpathR1, inpathR2, ph
     outpath = os.path.join(tmppath,sample+"_paired.out")
     infile1 = SeqIO(inpathR1,fileformat="FASTQ")
     infile2 = SeqIO(inpathR2,fileformat="FASTQ")
-    with open(outpath,'w') as outfile:
-        for read1,read2 in zip(infile1.read(),infile2.read()):
-            outfile.write("{0:s} {1:d} READ{2:d}\n".format(
-                read1.seq[skip[0]:skip[1]]+read2.seq[skip[2]:skip[3]],
-                meanphred(read1.qual[skip[0]:skip[1]]+read2.qual[skip[2]:skip[3]],phred=phred),
-                infile1.total))
+    if not deduplicator.dryrun:
+        with open(outpath,'w') as outfile:
+            for read1,read2 in zip(infile1.read(),infile2.read()):
+                outfile.write("{0:s} {1:d} READ{2:d}\n".format(
+                    read1.seq[skip[0]:skip[1]]+read2.seq[skip[2]:skip[3]],
+                    meanphred(read1.qual[skip[0]:skip[1]]+read2.qual[skip[2]:skip[3]],phred=phred),
+                    infile1.total))
 
-    # FIND DUPLICATES FROM TEMPORARY FILE
-    duplicates = external_sort(outpath)
-    print(sample, duplicates)
-    NDUPS= len(duplicates)
-    logging.info("{0:d} duplicates are found in '{1:s}' library".format(NDUPS,sample))
+        # FIND DUPLICATES FROM TEMPORARY FILE
+        duplicates = external_sort(outpath)
+        NDUPS= len(duplicates)
+        logging.info("{0:d} duplicates are found in '{1:s}' library".format(NDUPS,sample))
 
-    # REMOVE TEMPORARY FILE
-    os.remove(outpath)
+        # REMOVE TEMPORARY FILE
+        if not deduplicator.keeptmp:
+            os.remove(outpath)
 
-    # SAVE RESULTS
-    outdir = os.path.dirname(tmppath)
-    dupldir = os.path.join(outdir,"DUPLICATES")
-    ndup = 0
+        # SAVE RESULTS
+        outdir = os.path.dirname(tmppath)
+        dupldir = os.path.join(outdir,"DUPLICATES")
+        ndup = 0
 
-    with open(os.path.join(dupldir,sample+"_duplicates.dat"), 'w') as duplfile:
-        outpath1 = os.path.join(outdir,sample+"_R1"+suffix+".fq")
-        outpath2 = os.path.join(outdir,sample+"_R2"+suffix+".fq")
-        outfile1 = opengzfile(outpath1,gzout=gzoutput)
-        outfile2 = opengzfile(outpath2,gzout=gzoutput)
-        infile1 = SeqIO(inpathR1,fileformat="FASTQ")
-        infile2 = SeqIO(inpathR2,fileformat="FASTQ")
-        for read1,read2 in zip(infile1.read(),infile2.read()):
-            if ndup < NDUPS and infile1.total == duplicates[ndup]:
-                duplfile.write(read1.name+'\n')
-                ndup +=1
-            else:
-                outfile1.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read1.identifier,read1.seq,read1.qual))
-                outfile2.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read2.identifier,read2.seq,read2.qual))
-        return {sample: [infile1.total,NDUPS,[os.path.basename(outpath1), os.path.basename(outpath2)]]}
-
+        with open(os.path.join(dupldir,sample+"_duplicates.dat"), 'w') as duplfile:
+            outpath1 = os.path.join(outdir,sample+"_R1"+suffix+".fq")
+            outpath2 = os.path.join(outdir,sample+"_R2"+suffix+".fq")
+            outfile1 = opengzfile(outpath1,gzout=gzoutput)
+            outfile2 = opengzfile(outpath2,gzout=gzoutput)
+            infile1 = SeqIO(inpathR1,fileformat="FASTQ")
+            infile2 = SeqIO(inpathR2,fileformat="FASTQ")
+            for read1,read2 in zip(infile1.read(),infile2.read()):
+                if ndup < NDUPS and infile1.total == duplicates[ndup]:
+                    duplfile.write(read1.name+'\n')
+                    ndup +=1
+                else:
+                    outfile1.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read1.identifier,read1.seq,read1.qual))
+                    outfile2.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read2.identifier,read2.seq,read2.qual))
+            return {sample: [infile1.total,NDUPS,[os.path.basename(outpath1), os.path.basename(outpath2)]]}
+    else:
+        logging.info("{0:d} duplicates are found in '{1:s}' library".format(0,sample))
 
 
 def dedup_unpaired(sample, tmppath, skip, gzoutput, suffix, inpathR1, phred=33):
@@ -201,37 +203,41 @@ def dedup_unpaired(sample, tmppath, skip, gzoutput, suffix, inpathR1, phred=33):
     logging.info("Deduplicating unpaired reads for '{0:s}' library".format(sample))
     outpath = os.path.join(tmppath,sample+"_unpaired.out")
     infile1 = SeqIO(inpathR1,fileformat="FASTQ")
-    with open(outpath,'w') as outfile:
-        for read1 in infile1.read():
-            outfile.write("{0:s} {1:d} READ{2:d}\n".format(
-                read1.seq[skip[0]:skip[1]],
-                meanphred(read1.qual[skip[0]:skip[1]],phred=phred),
-                infile1.total))
-     
-    # FIND DUPLICATES FROM TEMPORARY FILE
-    duplicates = external_sort(outpath)
-    NDUPS= len(duplicates)
-    logging.info("{0:d} duplicates are found in '{1:s}' library".format(NDUPS,sample))
+    if not deduplicator.dryrun:
+        with open(outpath,'w') as outfile:
+            for read1 in infile1.read():
+                outfile.write("{0:s} {1:d} READ{2:d}\n".format(
+                    read1.seq[skip[0]:skip[1]],
+                    meanphred(read1.qual[skip[0]:skip[1]],phred=phred),
+                    infile1.total))
+         
+        # FIND DUPLICATES FROM TEMPORARY FILE
+        duplicates = external_sort(outpath)
+        NDUPS= len(duplicates)
+        logging.info("{0:d} duplicates are found in '{1:s}' library".format(NDUPS,sample))
 
-    # REMOVE TEMPORARY FILE
-    os.remove(outpath)
+        # REMOVE TEMPORARY FILE
+        if not deduplicator.keeptmp:
+            os.remove(outpath)
 
-    # SAVE RESULTS
-    outdir = os.path.dirname(tmppath)
-    dupldir = os.path.join(outdir,"DUPLICATES")
-    ndup = 0
+        # SAVE RESULTS
+        outdir = os.path.dirname(tmppath)
+        dupldir = os.path.join(outdir,"DUPLICATES")
+        ndup = 0
 
-    with open(os.path.join(dupldir,sample+"_duplicates.dat"), 'w') as duplfile:
-        outpath1 = os.path.join(outdir,sample+suffix+".fq")
-        outfile1 = opengzfile(outpath1,gzout=gzoutput)
-        infile1 = SeqIO(inpathR1,fileformat="FASTQ")
-        for read1 in infile1.read():
-            if ndup < NDUPS and infile1.total == duplicates[ndup]:
-                duplfile.write(read1.name+'\n')
-                ndup +=1
-            else:
-                outfile1.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read1.identifier,read1.seq,read1.qual))
-        return {sample: [infile1.total,NDUPS,[os.path.basename(outpath1)]]}
+        with open(os.path.join(dupldir,sample+"_duplicates.dat"), 'w') as duplfile:
+            outpath1 = os.path.join(outdir,sample+suffix+".fq")
+            outfile1 = opengzfile(outpath1,gzout=gzoutput)
+            infile1 = SeqIO(inpathR1,fileformat="FASTQ")
+            for read1 in infile1.read():
+                if ndup < NDUPS and infile1.total == duplicates[ndup]:
+                    duplfile.write(read1.name+'\n')
+                    ndup +=1
+                else:
+                    outfile1.write("@{0:s}\n{1:s}\n+\n{2:s}\n".format(read1.identifier,read1.seq,read1.qual))
+            return {sample: [infile1.total,NDUPS,[os.path.basename(outpath1)]]}
+    else:
+        logging.info("{0:d} duplicates are found in '{1:s}' library".format(0,sample))
 
 
 def debug():

@@ -326,7 +326,7 @@ def main(argv):
         print("\n-----------------------------------\nWelcome to the EXONtools pipeline!\n-----------------------------------\n")
 
         if args.rundry:
-            print("IMPORTANT: You selected the DRY RUN mode for the current run of the EXONtools. No actual analyses will be performed\n")
+            print("IMPORTANT: You selected DRY RUN mode for the current run of the EXONtools. No real tests will be performed\n")
 
         if args.debugmode:
             print("IMPORTANT: RUNNING THE DEBUGGING MODE\n")
@@ -389,7 +389,7 @@ def main(argv):
     if args.quietmode:
         logging.debug("The quiet mode is automatically turned off during debugging")
     if args.keeptmp:
-        logging.warning("The temporary directory will not be deleted after completion")
+        logging.warning("Temporary files will not be deleted after completion")
     if unknown:
         logging.warning("Ignoring the following unknown args: {un_arg:s}".format(un_arg=', '.join(unknown)))
 
