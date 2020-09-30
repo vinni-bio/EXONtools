@@ -50,7 +50,7 @@ Exon capture is one of the most promising approaches in next generation sequenci
    <i><b>Figure 1.</b> Three major stages of laboratory protocol for exon capture sequencing project on a non-model organism.</i>
 </p>
 
-## EXONtools project
+# EXONtools project
 
 The main goal of the EXONtools pipeline is to help researchers who are working on their own exon capture sequencing (ECS) project to:
 - reconstruct the complete annotated transcriptome of any non-model organism to create a "pseudoreference"
