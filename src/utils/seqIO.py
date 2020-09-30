@@ -205,7 +205,7 @@ class SeqIO(object):
                                 seqname = seqname[:-2]
                             elif re.search("_R1|_R2", seqname):
                                 paired = int(re.search("_R1|_R2", seqname).group()[-1])
-                            elif re.search("\d:\w:\d:.*", nameline[1]):
+                            elif len(nameline) > 1 and re.search("\d:\w:\d:.*", nameline[1]):
                                 xlist = nameline[1].split(":")
                                 paired = int(xlist[0])
                                 barcode = xlist[3]

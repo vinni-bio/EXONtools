@@ -74,7 +74,7 @@ def memory_check(memvalue, minmem=1, maxpercmem=0.85):
         raise TypeError
 
     mem = memvalue * 1000
-    maxmem = virtual_memory()[0] / 1000000 * 0.85
+    maxmem = virtual_memory()[0] / 1000000 * maxpercmem
 
     if memvalue < minmem:
         logging.error("The current pipeline step requires at least 1 Gb of memory.\n{0:s} Gb was requested by user. Please set a lower value\n".format(str(memvalue)))
