@@ -1,8 +1,9 @@
 ## EXONtools commands
 
-- [align_stacks](https://github.com/vinni-bio/EXONtools/blob/master/readme/align_stacks.md) 
+- [align_stacks](https://github.com/vinni-bio/EXONtools/blob/master/readme/align_stacks.md)
 - [annotate_contigs](https://github.com/vinni-bio/EXONtools/blob/master/readme/annotate_contigs.md)
 - [assemble_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/assemble_reads.md)
+- [build_stacks](https://github.com/vinni-bio/EXONtools/blob/master/readme/build_stacks.md)
 - [call_bases](https://github.com/vinni-bio/EXONtools/blob/master/readme/call_bases.md)
 - [call_snps](https://github.com/vinni-bio/EXONtools/blob/master/readme/call_snps.md)
 - [clean_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/clean_reads.md)
@@ -13,7 +14,7 @@
 - [deduplicate_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/deduplicate_reads.md)
 - [demultiplex_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/demultiplex_reads.md)
 - [design_baits](https://github.com/vinni-bio/EXONtools/blob/master/readme/design_baits.md)
-- [evaluate_assembly](https://github.com/vinni-bio/EXONtools/blob/master/readme/evaluate_assembly.md) 
+- [evaluate_assembly](https://github.com/vinni-bio/EXONtools/blob/master/readme/evaluate_assembly.md)
 - [evaluate_mapping](https://github.com/vinni-bio/EXONtools/blob/master/readme/evaluate_mapping.md)
 - [evaluate_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/evaluate_reads.md)
 - [filter_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/filter_reads.md)
@@ -23,6 +24,5 @@
 - [merge_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/merge_reads.md)
 - [search_exons](https://github.com/vinni-bio/EXONtools/blob/master/readme/search_exons.md)
 - [split_stacks](https://github.com/vinni-bio/EXONtools/blob/master/readme/split_stacks.md)
-- [stack_exons](https://github.com/vinni-bio/EXONtools/blob/master/readme/stack_exons.md)
 
 [GO BACK](https://github.com/vinni-bio/EXONtools#table-of-contents)

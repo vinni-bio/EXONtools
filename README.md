@@ -46,7 +46,7 @@ Exon capture is one of the most promising approaches in next generation sequenci
 - this method allows to screen tens of thousands of loci (genes) to identify those that are under selection
 
 <p align="center">
-   <img src="https://github.com/vinni-bio/EXONtools/blob/master/img/ECS_small.png" alt="Exon Capture Sequencing" width="800" height="250">
+   <img src="https://github.com/vinni-bio/EXONtools/blob/master/img/ECS_small_transp.png" alt="Exon Capture Sequencing" width="800" height="250">
    <i><b>Figure 1.</b> Three major stages of laboratory protocol for exon capture sequencing project on a non-model organism.</i>
 </p>
 
