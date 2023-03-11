@@ -158,7 +158,7 @@ EXONtools.py
                ├── Step E3. Mapping reads to assembly (map_reads)
                ├── Step E4. Base calling (call_bases)
                ├── Step E5. Assembly annotation (annotate_contigs)
-               ├── Step E6. Clustering exons (stack_exons)
+               ├── Step E6. Clustering exons (build_stacks)
                ├── Step E7. Aligning exons (align_stacks)
                ├── Step E8. Trimming and filtering exons (clean_stacks)
                ├── Step E9. Predicting exon boundaries (split_stacks)
@@ -178,43 +178,44 @@ EXONtools.py
    - SPAdes ([Bankevich et al., 2012](https://doi.org/10.1089/cmb.2012.0021))
    - TransABySS ([Robertson et al., 2010](https://doi.org/10.1038/nmeth.1517))
    - Trinity ([Grabherr et al., 2011](https://doi.org/10.1038/nbt.1883))
-4. [call_bases](https://github.com/vinni-bio/EXONtools/blob/master/readme/call_bases.md)
-5. [call_snps](https://github.com/vinni-bio/EXONtools/blob/master/readme/call_snps.md)
-6. [clean_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/clean_reads.md): *choose one*
+4. [build_stacks](https://github.com/vinni-bio/EXONtools/blob/master/readme/build_stacks.md)
+5. [call_bases](https://github.com/vinni-bio/EXONtools/blob/master/readme/call_bases.md)
+6. [call_snps](https://github.com/vinni-bio/EXONtools/blob/master/readme/call_snps.md)
+7. [clean_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/clean_reads.md): *choose one*
    - BBduk (Bushnell, 2018)
    - Cutadapt ([Martin, 2011](https://doi.org/10.14806/ej.17.1.200))
    - Trimmomatic ([Bolger et al., 2014](https://doi.org/10.1093/bioinformatics/btu170))
-7. [clean_stacks](https://github.com/vinni-bio/EXONtools/blob/master/readme/clean_stacks.md)
-8. [consensus_assembly](https://github.com/vinni-bio/EXONtools/blob/master/readme/consensus_assembly.md):
+8. [clean_stacks](https://github.com/vinni-bio/EXONtools/blob/master/readme/clean_stacks.md)
+9. [consensus_assembly](https://github.com/vinni-bio/EXONtools/blob/master/readme/consensus_assembly.md):
    - BLAT ([Kent, 2002](https://doi.org/10.1101/gr.229202))
    - CAP3 ([Huang & Madan, 1999](https://doi.org/10.1101/gr.9.9.868))
    - CD-HIT ([Li & Godzik, 2006](https://doi.org/10.1093/bioinformatics/btl158))
-9. [correct_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/correct_reads.md):
+10. [correct_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/correct_reads.md):
    - BayesHammer ([Nikolenko et al., 2013](https://doi.org/10.1186/1471-2164-14-S1-S7))
-10. [decontaminate_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/decontaminate_reads.md):
+11. [decontaminate_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/decontaminate_reads.md):
     - Bowtie2 ([Langmead & Salzberg, 2012](https://doi.org/10.1038/nmeth.1923))
-11. [deduplicate_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/deduplicate_reads.md)
-12. [demultiplex_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/demultiplex_reads.md)
-13. [design_baits](https://github.com/vinni-bio/EXONtools/blob/master/readme/design_baits.md)
-14. [evaluate_assembly](https://github.com/vinni-bio/EXONtools/blob/master/readme/evaluate_assembly.md)
-15. [evaluate_mapping](https://github.com/vinni-bio/EXONtools/blob/master/readme/evaluate_mapping.md)
-16. [evaluate_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/evaluate_reads.md)
-17. [filter_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/filter_reads.md)
-18. [format_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/format_reads.md)
-19. [map_exons](https://github.com/vinni-bio/EXONtools/blob/master/readme/map_exons.md):
+12. [deduplicate_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/deduplicate_reads.md)
+13. [demultiplex_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/demultiplex_reads.md)
+14. [design_baits](https://github.com/vinni-bio/EXONtools/blob/master/readme/design_baits.md)
+15. [evaluate_assembly](https://github.com/vinni-bio/EXONtools/blob/master/readme/evaluate_assembly.md)
+16. [evaluate_mapping](https://github.com/vinni-bio/EXONtools/blob/master/readme/evaluate_mapping.md)
+17. [evaluate_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/evaluate_reads.md)
+18. [filter_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/filter_reads.md)
+19. [format_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/format_reads.md)
+20. [map_exons](https://github.com/vinni-bio/EXONtools/blob/master/readme/map_exons.md):
     - BLAST ([Altschul et al., 1990](https://doi.org/10.1016/S0022-2836(05)80360-2))
     - CD-HIT ([Li & Godzik, 2006](https://doi.org/10.1093/bioinformatics/btl158))
-20. [map_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/map_reads.md):
+21. [map_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/map_reads.md):
     - Bowtie2 ([Langmead & Salzberg, 2012](https://doi.org/10.1038/nmeth.1923))
     - bwa ([Li & Durbin, 2009](https://doi.org/10.1093/bioinformatics/btp324))
     - SAMtools ([Li et al., 2009](https://doi.org/10.1093/bioinformatics/btp352))
-21. [merge_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/merge_reads.md): *choose one*
+22. [merge_reads](https://github.com/vinni-bio/EXONtools/blob/master/readme/merge_reads.md): *choose one*
     - BBmerge ([Bushnell et al., 2017](https://doi.org/10.1371/journal.pone.0185056))
     - FLASH ([Magoč & Salzberg, 2011](https://doi.org/10.1093/bioinformatics/btr507))
-22. [search_exons](https://github.com/vinni-bio/EXONtools/blob/master/readme/search_exons.md):
+23. [search_exons](https://github.com/vinni-bio/EXONtools/blob/master/readme/search_exons.md):
     - BLAST ([Altschul et al., 1990](https://doi.org/10.1016/S0022-2836(05)80360-2))
-23. [split_stacks](https://github.com/vinni-bio/EXONtools/blob/master/readme/split_stacks.md)
-24. [stack_exons](https://github.com/vinni-bio/EXONtools/blob/master/readme/stack_exons.md)
+24. [split_stacks](https://github.com/vinni-bio/EXONtools/blob/master/readme/split_stacks.md)
+
 
 ## EXONtools general options
 
